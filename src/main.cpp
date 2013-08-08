@@ -33,17 +33,16 @@ class Accessor {
         uint8_t bytes[sizeof(RegT)];
         RegT value;
       };
-
-      // Reverse bytes if necessary.
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+      // Reverse bytes.
       for (uint8_t i = 0; i < sizeof(RegT); i++) {
-      #if __BYTE_ORDER == __LITTLE_ENDIAN
         bytes[i] = ptr_[index][sizeof(RegT) - (i+1)]; 
-      #else  
-        #warning Big-endian implementation is untested.
-        bytes[i] = ptr_[index][i]; 
-      #endif
       }
-
+#else  
+#warning Big-endian implementation is untested.
+      // Copy bytes without reversing.
+      memcpy(bytes, ptr_, sizeof(RegT));
+#endif
       return value;
     }
 
