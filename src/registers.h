@@ -5,6 +5,16 @@ namespace registers {
 
 uint32_t raw[COMMAND_START_ADDRESS + COMMAND_COUNT];
 
+/**
+ * This class provides an accessor of fields contained in one or more
+ * consecutive UM6 registers. Each register is nominally a uint32_t, 
+ * but XYZ vectors are stored as a pair of int16_t values in one 
+ * register and one in the following register. Other values are 
+ * stored as int32_t representation or float32s.
+ *
+ * This class takes care of the necessary transformations to simplify
+ * the actual "business logic" of the driver.
+ */
 template<typename RegT>
 class Accessor {
   public:

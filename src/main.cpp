@@ -24,13 +24,19 @@
 // us to publish everything we have.
 #define TRIGGER_PACKET UM6_TEMPERATURE
 
-
+/**
+ * Send configuration messages to the UM6, critically, to turn on the value outputs
+ * which we require, and inject necessary configuration parameters.
+ */
 void configureSensor(serial::Serial& ser)
 {
 
-
 }
 
+/**
+ * Uses the register::Accessor instances to grab data from the IMU, and populate
+ * the ROS messages which are output.
+ */
 void handlePublish()
 {
   static ros::NodeHandle n;
@@ -96,8 +102,13 @@ void handlePublish()
   }
 }
 
+/**
+ * Main loop which represents a "session" of listening to the IMU
+ * and publishing appropriate ROS messages.
+ */
 void readSensor(serial::Serial& ser)
 {
+  // Flag to avoid publishing a warning when first connecting.
   bool first = true;
 
   while(ros::ok()) {
@@ -120,13 +131,13 @@ void readSensor(serial::Serial& ser)
           ROS_DEBUG("Received packet %02x with non-batched data.", type_address[1]);
         }
 
-        // Read data bytes initially into a buffer so that we can verify checksum.
+        // Read data bytes initially into a buffer so that we can compute the checksum.
         std::string data;
         ser.read(data, data_length * 4);
         BOOST_FOREACH(uint8_t ch, data)
           checksum_calculated += ch;
      
-        // Compute and compare the checksum.
+        // Compare computed checksum with transmitted value.
         uint16_t checksum_transmitted; 
         ser.read((uint8_t*)&checksum_transmitted, 2);
         checksum_transmitted = ntohs(checksum_transmitted);
@@ -153,10 +164,14 @@ void readSensor(serial::Serial& ser)
   }
 }
 
+/**
+ * Node entry-point. Handles ROS setup, and serial port connection/reconnection.
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "um6_driver");
 
+  // Load parameters from private node handle.
   std::string port;
   int32_t baud;
   ros::NodeHandle n_local("~");
