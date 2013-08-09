@@ -13,7 +13,7 @@
 
 // Don't try to be too clever. Arrival of this message triggers
 // us to publish everything we have.
-#define TRIGGER_PACKET UM6_TEMPERATURE
+const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
 
 /**
  * Send configuration messages to the UM6, critically, to turn on the value outputs
@@ -117,8 +117,10 @@ int main(int argc, char **argv)
       first_failure = true;
       try {
         um6::Comms sensor(ser);
+
+
         while(ros::ok()) {
-          if (sensor.spinOnce(TRIGGER_PACKET)) {
+          if (sensor.receive() == TRIGGER_PACKET) {
             // Triggered by arrival of final message in group.
             publishMsgs(sensor.registers);
           }

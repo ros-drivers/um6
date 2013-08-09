@@ -7,15 +7,16 @@
 #include <boost/foreach.hpp>
 #include <arpa/inet.h>
 
-#define PACKET_HAS_DATA     (1 << 7)
-#define PACKET_IS_BATCH     (1 << 6)
-#define PACKET_BATCH_LENGTH_MASK  (0x0F)
-#define PACKET_BATCH_LENGTH_OFFSET  2
-
 namespace um6 {
 
-bool Comms::spinOnce(const uint8_t trigger_packet) {
-  bool triggered = false;
+const uint8_t PACKET_HAS_DATA = 1 << 7;
+const uint8_t PACKET_IS_BATCH = 1 << 6;
+const uint8_t PACKET_BATCH_LENGTH_MASK = 0x0F;
+const uint8_t PACKET_BATCH_LENGTH_OFFSET = 2;
+
+
+int16_t Comms::receive() {
+  int16_t successful_packet = -1;
 
   // Search the serial stream for a start-of-packet sequence.
   std::string snp;
@@ -50,10 +51,7 @@ bool Comms::spinOnce(const uint8_t trigger_packet) {
         // Copy data from checksum buffer into registers.
         // Byte-order correction (as necessary) happens at access-time.
         memcpy(&registers.raw[type_address[1]], data.c_str(), data.length());
-
-        if (type_address[1] == trigger_packet) {
-          triggered = true;
-        }
+        successful_packet = type_address[1];
       } else {
         ROS_WARN("Discarding packet due to bad checksum.");
         ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
@@ -65,7 +63,7 @@ bool Comms::spinOnce(const uint8_t trigger_packet) {
 
   }
   first_spin_ = false;
-  return triggered;
+  return successful_packet;
 }
 
 }
