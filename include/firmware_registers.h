@@ -1,7 +1,9 @@
-/**
- * Copied directly from the UM6_config.h file, available online here:
- * http://sourceforge.net/p/um6firmware/code/34/tree/trunk/UM6%20Firmware/UM6_config.h#l14
+ /**
  *
+ *  \file
+ *  \brief   Copied directly from the UM6_config.h file, available online here:
+ *           http://sourceforge.net/p/um6firmware/code/34/tree/trunk/UM6%20Firmware/UM6_config.h#l14
+ *  \author  CH Robotics 
  */
 
 
