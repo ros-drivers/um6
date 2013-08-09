@@ -10,7 +10,10 @@
 #define PI 3.14159265359
 #define TO_RADIANS (PI / 180.0)
 #define TO_DEGREES (180.0 / PI)
-#define NUM_REGISTERS (COMMAND_START_ADDRESS + COMMAND_COUNT)
+
+// This excludes the command registers, which are always sent
+// and received with no data.
+#define NUM_REGISTERS (DATA_REG_START_ADDRESS + DATA_ARRAY_SIZE)
 
 
 namespace um6 {
@@ -41,12 +44,23 @@ class Registers;
  */
 class Accessor_ {
   public:
-    Accessor_(Registers* registers, uint8_t register_index, uint8_t array_length)
-      : index(register_index), length(array_length), registers_(registers)
+    Accessor_(Registers* registers, uint8_t register_index, 
+        uint8_t register_width, uint8_t array_length)
+      : index(register_index), width(register_width),
+        length(array_length), registers_(registers)
     {}
 
     void* raw();
+
+    /** Number of the register in the array of uint32s which is shared with
+     *  the UM6 firmware. */ 
     const uint8_t index;
+
+    /** Width of the sub-register field, in bytes, either 2 or 4. */
+    const uint8_t width;
+
+    /** Length of how many sub-register fields comprise this accessor. Not 
+     *  required to stay within the bounds of a single register. */
     const uint16_t length;
     
   private:
@@ -56,26 +70,26 @@ class Accessor_ {
 template<typename RegT>
 class Accessor : public Accessor_ {
   public:
-    Accessor(Registers* registers, uint8_t register_index, uint8_t array_length, double scale_factor=1.0)
-      : Accessor_(registers, register_index, array_length), scale_(scale_factor)
+    Accessor(Registers* registers, uint8_t register_index, uint8_t array_length=0, double scale_factor=1.0)
+      : Accessor_(registers, register_index, sizeof(RegT), array_length), scale_(scale_factor)
     {}
 
-    RegT get(uint8_t index) {
+    RegT get(uint8_t field) {
       RegT value;
-      memcpy_network(&value, (RegT*)raw() + index, sizeof(value));
+      memcpy_network(&value, (RegT*)raw() + field, sizeof(value));
       return value;
     }
 
-    double get_scaled(uint16_t index) {
-      return get(index) * scale_;
+    double get_scaled(uint16_t field) {
+      return get(field) * scale_;
     }
 
-    void set(uint8_t index, RegT value) {
-      memcpy_network((RegT*)raw() + index, &value, sizeof(value));
+    void set(uint8_t field, RegT value) {
+      memcpy_network((RegT*)raw() + field, &value, sizeof(value));
     }
 
-    void set_scaled(uint16_t index, double value) {
-      set(index, value / scale_);
+    void set_scaled(uint16_t field, double value) {
+      set(field, value / scale_);
     }
 
   private:
@@ -95,7 +109,13 @@ class Registers
       euler(this, UM6_EULER_PHI_THETA, 3, 0.0109863 * TO_RADIANS),
       quat(this, UM6_QUAT_AB, 4, 0.0000335693),
       covariance(this, UM6_ERROR_COV_00, 16),
-      temperature(this, UM6_TEMPERATURE, 1)
+      temperature(this, UM6_TEMPERATURE, 1),
+      communication(this, UM6_COMMUNICATION, 1),
+      mag_ref(this, UM6_MAG_REF_X, 3),
+      accel_ref(this, UM6_ACCEL_REF_X, 3),
+      gyro_bias(this, UM6_GYRO_BIAS_XY, 3),
+      accel_bias(this, UM6_ACCEL_BIAS_XY, 3),
+      mag_bias(this, UM6_MAG_BIAS_XY, 3)
     {
       memset(raw_, 0, sizeof(raw_));
     }
@@ -106,7 +126,9 @@ class Registers
     Accessor<float> covariance, temperature;
 
     // Configs
-
+    Accessor<uint32_t> communication;
+    Accessor<float> mag_ref, accel_ref;
+    Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
 
     void write_raw(uint8_t register_index, std::string data) {
       memcpy(&raw_[register_index], data.c_str(), data.length());

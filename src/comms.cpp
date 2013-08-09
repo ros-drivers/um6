@@ -15,7 +15,7 @@ const uint8_t PACKET_BATCH_LENGTH_MASK = 0x0F;
 const uint8_t PACKET_BATCH_LENGTH_OFFSET = 2;
 
 
-int16_t Comms::receive() {
+int16_t Comms::receive(Registers& registers) {
   int16_t successful_packet = -1;
 
   // Search the serial stream for a start-of-packet sequence.
@@ -65,6 +65,15 @@ int16_t Comms::receive() {
   }
   first_spin_ = false;
   return successful_packet;
+}
+
+
+void Comms::send(Accessor_& r) {
+
+}
+
+void Comms::sendWaitAck(Accessor_&) {
+
 }
 
 }

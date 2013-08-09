@@ -1,11 +1,14 @@
 
-#include "registers.h"
+#include <stdint.h>
 
 namespace serial {
   class Serial;
 }
 
 namespace um6 {
+
+class Registers;
+class Accessor_;
 
 class Comms
 {
@@ -14,8 +17,6 @@ class Comms
     serial::Serial& serial_;
 
   public:
-    Registers registers;
-
     Comms(serial::Serial& s) : serial_(s), first_spin_(true) {
     }
 
@@ -25,7 +26,7 @@ class Comms
      * Otherwise, returns the 8-bit register number of the successfully
      * returned packet.
      */
-    int16_t receive();
+    int16_t receive(Registers&);
 
     void send(Accessor_&);
 

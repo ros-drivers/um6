@@ -21,27 +21,34 @@ const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
  */
 void configureSensor(um6::Comms& sensor)
 {
+  um6::Registers r;
+
+  uint32_t comm_reg = UM6_BROADCAST_ENABLED |
+      UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED | 
+      UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED;
+  r.communication.set(0, comm_reg);
+  sensor.send(r.communication); 
+
   if (ros::param::has("~mag_ref"))
   {
     double x, y, z;
     ros::param::get("~mag_ref/x", x);
     ros::param::get("~mag_ref/y", y);
     ros::param::get("~mag_ref/z", z);
-    //sensor.registers.mag_ref.set_scaled(0, x);
-    //sensor.registers.mag_ref.set_scaled(1, y);
-    //sensor.registers.mag_ref.set_scaled(2, z);
-    //sensor.send
+    ROS_INFO("Configuring magnetic reference vector to (%lf, %lf, %lf)", x, y, z);
+    r.mag_ref.set_scaled(0, x);
+    r.mag_ref.set_scaled(1, y);
+    r.mag_ref.set_scaled(2, z);
+    sensor.send(r.mag_ref);
   }
-
 }
 
 /**
- * Uses the register::Accessor instances to grab data from the IMU, and populate
+ * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Comms& sensor, ros::NodeHandle& n, std_msgs::Header& header)
+void publishMsgs(um6::Registers& r, ros::NodeHandle& n, std_msgs::Header& header)
 {
-  um6::Registers& r = sensor.registers;
   static ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu/data", 1, false);
   static ros::Publisher mag_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/mag", 1, false);
   static ros::Publisher rpy_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/rpy", 1, false);
@@ -129,11 +136,13 @@ int main(int argc, char **argv)
       try {
         um6::Comms sensor(ser);
         configureSensor(sensor); 
+
+        um6::Registers registers;
         while(ros::ok()) {
-          if (sensor.receive() == TRIGGER_PACKET) {
+          if (sensor.receive(registers) == TRIGGER_PACKET) {
             // Triggered by arrival of final message in group.
             header.stamp = ros::Time::now();
-            publishMsgs(sensor, n, header);
+            publishMsgs(registers, n, header);
           }
         }
       } catch (std::exception& e) {
