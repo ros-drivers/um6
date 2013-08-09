@@ -52,15 +52,18 @@ class Accessor_ {
 
     void* raw();
 
-    /** Number of the register in the array of uint32s which is shared with
-     *  the UM6 firmware. */ 
+    /** 
+     * Number/address of the register in the array of uint32s which is
+     * shared with the UM6 firmware. */ 
     const uint8_t index;
 
-    /** Width of the sub-register field, in bytes, either 2 or 4. */
+    /** 
+     * Width of the sub-register field, in bytes, either 2 or 4. */
     const uint8_t width;
 
-    /** Length of how many sub-register fields comprise this accessor. Not 
-     *  required to stay within the bounds of a single register. */
+    /** 
+     * Length of how many sub-register fields comprise this accessor. Not 
+     * required to stay within the bounds of a single register. */
     const uint16_t length;
     
   private:

@@ -69,7 +69,25 @@ int16_t Comms::receive(Registers& registers) {
 
 
 void Comms::send(Accessor_& r) {
+  
+  std::stringstream ss("snp");
+  uint8_t type;
+  if (r.length > 0) type |= PACKET_HAS_DATA;
+  if (r.length > 1) {
+    type |= PACKET_IS_BATCH;
+    type |= r.length << PACKET_BATCH_LENGTH_OFFSET;
+  }
+  ss << type << r.index;
 
+  std::string data((char*)r.raw(), r.length * 4);
+  ss << data;
+
+  uint16_t checksum = 0;
+  BOOST_FOREACH(uint8_t ch, ss.str())
+    checksum += ch;
+
+  ss << checksum;
+  serial_.write(ss.str());
 }
 
 void Comms::sendWaitAck(Accessor_&) {
