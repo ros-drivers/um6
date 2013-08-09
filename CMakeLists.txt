@@ -40,7 +40,7 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
-add_executable(um6_driver src/main.cpp)
+add_executable(um6_driver src/main.cpp src/registers.cpp src/comms.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(um6_driver

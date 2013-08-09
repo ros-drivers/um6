@@ -1,10 +1,4 @@
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/foreach.hpp>
-
-// Byte-order related stuff.
-#include <endian.h>
-#include <arpa/inet.h>
 
 #include "ros/ros.h"
 #include "serial/serial.h"
@@ -14,11 +8,8 @@
 #include "std_msgs/Header.h"
 
 #include "registers.h"
+#include "comms.h"
 
-#define PACKET_HAS_DATA     (1 << 7)
-#define PACKET_IS_BATCH     (1 << 6)
-#define PACKET_BATCH_LENGTH_MASK  (0x0F)
-#define PACKET_BATCH_LENGTH_OFFSET  2
 
 // Don't try to be too clever. Arrival of this message triggers
 // us to publish everything we have.
@@ -37,7 +28,7 @@ void configureSensor(serial::Serial& ser)
  * Uses the register::Accessor instances to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void handlePublish()
+void publishMsgs(um6::Registers& r)
 {
   static ros::NodeHandle n;
   static ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu/data", 1, false);
@@ -52,21 +43,19 @@ void handlePublish()
     sensor_msgs::Imu imu_msg;
     imu_msg.header = header;
 
-    using namespace registers;
-
     // IMU outputs [w,x,y,z] NED, convert to [x,y,z,w] ENU
-    imu_msg.orientation.x = quat.get_scaled(2);
-    imu_msg.orientation.x = quat.get_scaled(1);
-    imu_msg.orientation.x = -quat.get_scaled(3);
-    imu_msg.orientation.x = quat.get_scaled(0);
+    imu_msg.orientation.x = r.quat.get_scaled(2);
+    imu_msg.orientation.x = r.quat.get_scaled(1);
+    imu_msg.orientation.x = -r.quat.get_scaled(3);
+    imu_msg.orientation.x = r.quat.get_scaled(0);
 
     // NED -> ENU conversion.
-    imu_msg.angular_velocity.x = gyro.get_scaled(1);
-    imu_msg.angular_velocity.y = gyro.get_scaled(0);
-    imu_msg.angular_velocity.z = -gyro.get_scaled(2);
-    imu_msg.linear_acceleration.x = -gyro.get_scaled(1);
-    imu_msg.linear_acceleration.y = -gyro.get_scaled(0);
-    imu_msg.linear_acceleration.z = -gyro.get_scaled(2);
+    imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
+    imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
+    imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
+    imu_msg.linear_acceleration.x = -r.accel.get_scaled(1);
+    imu_msg.linear_acceleration.y = -r.accel.get_scaled(0);
+    imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
 
     imu_pub.publish(imu_msg);
   }
@@ -74,93 +63,25 @@ void handlePublish()
   if (mag_pub.getNumSubscribers() > 0) {
     geometry_msgs::Vector3Stamped mag_msg;
     mag_msg.header = header;
-
-    using namespace registers;
-    mag_msg.vector.x = mag.get_scaled(1);
-    mag_msg.vector.y = mag.get_scaled(0);
-    mag_msg.vector.z = -mag.get_scaled(2);
-
+    mag_msg.vector.x = r.mag.get_scaled(1);
+    mag_msg.vector.y = r.mag.get_scaled(0);
+    mag_msg.vector.z = -r.mag.get_scaled(2);
     mag_pub.publish(mag_msg);
   }
 
   if (rpy_pub.getNumSubscribers() > 0) {
     geometry_msgs::Vector3Stamped rpy_msg;
     rpy_msg.header = header;
-
-    using namespace registers;
-    rpy_msg.vector.x = euler.get_scaled(0);
-    rpy_msg.vector.y = euler.get_scaled(1);
-    rpy_msg.vector.z = euler.get_scaled(2);
-
+    rpy_msg.vector.x = r.euler.get_scaled(0);
+    rpy_msg.vector.y = r.euler.get_scaled(1);
+    rpy_msg.vector.z = r.euler.get_scaled(2);
     rpy_pub.publish(rpy_msg);
   }
 
   if (temp_pub.getNumSubscribers() > 0) {
     std_msgs::Float32 temp_msg;
-    temp_msg.data = registers::temperature.get_scaled(0);
+    temp_msg.data = r.temperature.get_scaled(0);
     temp_pub.publish(temp_msg);
-  }
-}
-
-/**
- * Main loop which represents a "session" of listening to the IMU
- * and publishing appropriate ROS messages.
- */
-void readSensor(serial::Serial& ser)
-{
-  // Flag to avoid publishing a warning when first connecting.
-  bool first = true;
-
-  while(ros::ok()) {
-    // Quick and dirty way to find a start-of-packet.
-    std::string snp;
-    ser.readline(snp, 96, "snp");
-    if (boost::algorithm::ends_with(snp, "snp")) {
-      uint16_t checksum_calculated = 's' + 'n' + 'p';
-      if (!first) 
-        ROS_WARN_COND(snp.length() > 3, "Discarded %ld junk byte(s) preceeding packet.", snp.length() - 3);
-      uint8_t type_address[2];
-      ser.read(type_address, 2);
-      checksum_calculated += type_address[0] + type_address[1];
-      if (type_address[0] & PACKET_HAS_DATA) {
-        uint8_t data_length = 1;
-        if (type_address[0] & PACKET_IS_BATCH) {
-          data_length = (type_address[0] >> PACKET_BATCH_LENGTH_OFFSET) & PACKET_BATCH_LENGTH_MASK;
-          ROS_DEBUG("Received packet %02x with batched (%d) data.", type_address[1], data_length);
-        } else {
-          ROS_DEBUG("Received packet %02x with non-batched data.", type_address[1]);
-        }
-
-        // Read data bytes initially into a buffer so that we can compute the checksum.
-        std::string data;
-        ser.read(data, data_length * 4);
-        BOOST_FOREACH(uint8_t ch, data)
-          checksum_calculated += ch;
-     
-        // Compare computed checksum with transmitted value.
-        uint16_t checksum_transmitted; 
-        ser.read((uint8_t*)&checksum_transmitted, 2);
-        checksum_transmitted = ntohs(checksum_transmitted);
-        if (checksum_transmitted == checksum_calculated) {
-          // Copy data from checksum buffer into registers.
-          // Byte-order correction (as necessary) happens at access-time.
-          memcpy(&registers::raw[type_address[1]], data.c_str(), data.length());
-
-          if (type_address[1] == TRIGGER_PACKET) {
-            handlePublish();
-            ros::spinOnce();
-          }
-        } else {
-          ROS_WARN("Discarding packet due to bad checksum.");
-          ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
-              checksum_calculated, checksum_transmitted);
-        }
-      } else {
-        ROS_DEBUG("Received packet %02x without data.", type_address[1]);
-      }
-
-    }
-    first = false;
   }
 }
 
@@ -195,8 +116,13 @@ int main(int argc, char **argv)
       ROS_INFO("Successfully connected to serial port.");
       first_failure = true;
       try {
-        configureSensor(ser);
-        readSensor(ser);
+        um6::Comms sensor(ser);
+        while(ros::ok()) {
+          if (sensor.spinOnce(TRIGGER_PACKET)) {
+            // Triggered by arrival of final message in group.
+            publishMsgs(sensor.registers);
+          }
+        }
       } catch (std::exception& e) {
         if (ser.isOpen()) ser.close();
         ROS_ERROR_STREAM(e.what());
