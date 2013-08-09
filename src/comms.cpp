@@ -25,16 +25,17 @@ int16_t Comms::receive() {
     uint16_t checksum_calculated = 's' + 'n' + 'p';
     ROS_WARN_COND(!first_spin_ && snp.length() > 3, 
         "Discarded %ld junk byte(s) preceeding packet.", snp.length() - 3);
-    uint8_t type_address[2];
-    serial_.read(type_address, 2);
-    checksum_calculated += type_address[0] + type_address[1];
-    if (type_address[0] & PACKET_HAS_DATA) {
+    uint8_t type, address;
+    serial_.read(&type, 1);
+    serial_.read(&address, 1);
+    checksum_calculated += type + address;
+    if (type & PACKET_HAS_DATA) {
       uint8_t data_length = 1;
-      if (type_address[0] & PACKET_IS_BATCH) {
-        data_length = (type_address[0] >> PACKET_BATCH_LENGTH_OFFSET) & PACKET_BATCH_LENGTH_MASK;
-        ROS_DEBUG("Received packet %02x with batched (%d) data.", type_address[1], data_length);
+      if (type & PACKET_IS_BATCH) {
+        data_length = (type >> PACKET_BATCH_LENGTH_OFFSET) & PACKET_BATCH_LENGTH_MASK;
+        ROS_DEBUG("Received packet %02x with batched (%d) data.", address, data_length);
       } else {
-        ROS_DEBUG("Received packet %02x with non-batched data.", type_address[1]);
+        ROS_DEBUG("Received packet %02x with non-batched data.", address);
       }
 
       // Read data bytes initially into a buffer so that we can compute the checksum.
@@ -50,15 +51,15 @@ int16_t Comms::receive() {
       if (checksum_transmitted == checksum_calculated) {
         // Copy data from checksum buffer into registers.
         // Byte-order correction (as necessary) happens at access-time.
-        memcpy(&registers.raw[type_address[1]], data.c_str(), data.length());
-        successful_packet = type_address[1];
+        registers.write_raw(address, data);
+        successful_packet = address;
       } else {
         ROS_WARN("Discarding packet due to bad checksum.");
         ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
             checksum_calculated, checksum_transmitted);
       }
     } else {
-      ROS_DEBUG("Received packet %02x without data.", type_address[1]);
+      ROS_DEBUG("Received packet %02x without data.", address);
     }
 
   }

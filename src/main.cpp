@@ -19,8 +19,19 @@ const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
  * Send configuration messages to the UM6, critically, to turn on the value outputs
  * which we require, and inject necessary configuration parameters.
  */
-void configureSensor(serial::Serial& ser)
+void configureSensor(um6::Comms& sensor)
 {
+  if (ros::param::has("~mag_ref"))
+  {
+    double x, y, z;
+    ros::param::get("~mag_ref/x", x);
+    ros::param::get("~mag_ref/y", y);
+    ros::param::get("~mag_ref/z", z);
+    //sensor.registers.mag_ref.set_scaled(0, x);
+    //sensor.registers.mag_ref.set_scaled(1, y);
+    //sensor.registers.mag_ref.set_scaled(2, z);
+    //sensor.send
+  }
 
 }
 
@@ -28,16 +39,13 @@ void configureSensor(serial::Serial& ser)
  * Uses the register::Accessor instances to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Registers& r)
+void publishMsgs(um6::Comms& sensor, ros::NodeHandle& n, std_msgs::Header& header)
 {
-  static ros::NodeHandle n;
+  um6::Registers& r = sensor.registers;
   static ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu/data", 1, false);
   static ros::Publisher mag_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/mag", 1, false);
   static ros::Publisher rpy_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/rpy", 1, false);
   static ros::Publisher temp_pub = n.advertise<std_msgs::Float32>("imu/temperature", 1, false);
-  std_msgs::Header header;
-  header.stamp = ros::Time::now();
-  header.frame_id = "imu";
 
   if (imu_pub.getNumSubscribers() > 0) {
     sensor_msgs::Imu imu_msg;
@@ -95,15 +103,18 @@ int main(int argc, char **argv)
   // Load parameters from private node handle.
   std::string port;
   int32_t baud;
-  ros::NodeHandle n_local("~");
-  n_local.param<std::string>("port", port, "/dev/ttyUSB0");
-  n_local.param("baud", baud, 115200);
+  ros::param::param<std::string>("~port", port, "/dev/ttyUSB0");
+  ros::param::param<int32_t>("~baud", baud, 115200);
 
   serial::Serial ser;
   ser.setPort(port);
   ser.setBaudrate(baud);
   serial::Timeout to = serial::Timeout::simpleTimeout(500);
   ser.setTimeout(to);
+
+  ros::NodeHandle n;
+  std_msgs::Header header;
+  ros::param::param<std::string>("~frame_id", header.frame_id, "imu_link");
 
   bool first_failure = true;
   while (ros::ok()) {
@@ -117,12 +128,12 @@ int main(int argc, char **argv)
       first_failure = true;
       try {
         um6::Comms sensor(ser);
-
-
+        configureSensor(sensor); 
         while(ros::ok()) {
           if (sensor.receive() == TRIGGER_PACKET) {
             // Triggered by arrival of final message in group.
-            publishMsgs(sensor.registers);
+            header.stamp = ros::Time::now();
+            publishMsgs(sensor, n, header);
           }
         }
       } catch (std::exception& e) {

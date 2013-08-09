@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 #include <string.h>
 #include <endian.h>
 
@@ -59,8 +60,7 @@ class Accessor : public Accessor_ {
       : Accessor_(registers, register_index, array_length), scale_(scale_factor)
     {}
 
-    RegT get(uint8_t index)
-    {
+    RegT get(uint8_t index) {
       RegT value;
       memcpy_network(&value, (RegT*)raw() + index, sizeof(value));
       return value;
@@ -70,9 +70,12 @@ class Accessor : public Accessor_ {
       return get(index) * scale_;
     }
 
-    void set(uint8_t index, RegT val)
-    {
+    void set(uint8_t index, RegT value) {
+      memcpy_network((RegT*)raw() + index, &value, sizeof(value));
+    }
 
+    void set_scaled(uint16_t index, double value) {
+      set(index, value / scale_);
     }
 
   private:
@@ -94,14 +97,25 @@ class Registers
       covariance(this, UM6_ERROR_COV_00, 16),
       temperature(this, UM6_TEMPERATURE, 1)
     {
-      memset(raw, 0, sizeof(raw));
+      memset(raw_, 0, sizeof(raw_));
     }
 
-    uint32_t raw[NUM_REGISTERS];
-
+    // Data
     Accessor<int16_t> gyro_raw, accel_raw, mag_raw;
     Accessor<int16_t> gyro, accel, mag, euler, quat;
     Accessor<float> covariance, temperature;
+
+    // Configs
+
+
+    void write_raw(uint8_t register_index, std::string data) {
+      memcpy(&raw_[register_index], data.c_str(), data.length());
+    }
+
+  private:
+    uint32_t raw_[NUM_REGISTERS];
+
+  friend class Accessor_;
 };
 
 }

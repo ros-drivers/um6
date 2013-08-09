@@ -8,7 +8,7 @@ void* Accessor_::raw() {
   // but it's necessary to resolve the otherwise circular dependency between the
   // Registers and Accessor classes, when Registers contains Accessor instances
   // and Accessor is a template class.
-  return &registers_->raw[index];
+  return &registers_->raw_[index];
 }
 
 }

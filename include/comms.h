@@ -29,7 +29,7 @@ class Comms
 
     void send(Accessor_&);
 
-    void sendAndAck(Accessor_&);
+    void sendWaitAck(Accessor_&);
 };
 
 }
