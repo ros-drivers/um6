@@ -14,6 +14,18 @@
 
 namespace um6 {
 
+inline static void memcpy_network(void* dest, void* src, size_t count) {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  for (uint8_t i = 0; i < count; i++) {
+    ((uint8_t*)dest)[i] = ((uint8_t*)src)[count - (i+1)]; 
+  }
+#else  
+  // Copy bytes without reversing.
+  #warning Big-endian implementation is untested.
+  memcpy(dest, src, count);
+#endif
+}
+
 class Registers;
  
 /**
@@ -49,31 +61,19 @@ class Accessor : public Accessor_ {
 
     RegT get(uint8_t index)
     {
-      bytes_t* const ptr_ = (bytes_t*)raw();
-
-      union {
-        uint8_t bytes[sizeof(RegT)];
-        RegT value;
-      };
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-      // Reverse bytes.
-      for (uint8_t i = 0; i < sizeof(RegT); i++) {
-        bytes[i] = ptr_[index][sizeof(RegT) - (i+1)]; 
-      }
-#else  
-#warning Big-endian implementation is untested.
-      // Copy bytes without reversing.
-      memcpy(bytes, ptr_, sizeof(RegT));
-#endif
+      RegT value;
+      memcpy_network(&value, (RegT*)raw() + index, sizeof(value));
       return value;
     }
 
     double get_scaled(uint16_t index) {
-    //double Accessor::get_scaled(uint16_t index) {
       return get(index) * scale_;
     }
 
-    typedef uint8_t bytes_t[sizeof(RegT)];
+    void set(uint8_t index, RegT val)
+    {
+
+    }
 
   private:
     const double scale_; 
