@@ -16,6 +16,35 @@
 const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
 
 /**
+ * Function generalizes the process of writing an XYZ vector into consecutive
+ * fields in UM6 registers.
+ */
+template<typename RegT>
+void configureVector3(um6::Comms& sensor, um6::Accessor<RegT>& reg,
+    std::string param, std::string human_name) {
+  if (reg.length != 3) {
+    throw std::logic_error("configureVector3 may only be used with 3-field registers!");
+  }
+
+  if (ros::param::has(param))
+  {
+    double x, y, z;
+    ros::param::get(param + "/x", x);
+    ros::param::get(param + "/y", y);
+    ros::param::get(param + "/z", z);
+    ROS_INFO_STREAM("Configuring " << human_name << " to ("
+                    << x << ", " << y << ", " << z << ")");
+    reg.set_scaled(0, x);
+    reg.set_scaled(1, y);
+    reg.set_scaled(2, z);
+    if (!sensor.sendWaitAck(reg)) {
+
+      throw std::runtime_error("Unable to configure "); // << human_name);
+    }
+  }
+}
+
+/**
  * Send configuration messages to the UM6, critically, to turn on the value outputs
  * which we require, and inject necessary configuration parameters.
  */
@@ -23,24 +52,23 @@ void configureSensor(um6::Comms& sensor)
 {
   um6::Registers r;
 
+  // Enable outputs we need.
+  const uint8_t UM6_BAUD_115200 = 0x5;
   uint32_t comm_reg = UM6_BROADCAST_ENABLED |
       UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED | 
-      UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED;
+      UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED |
+      UM6_BAUD_115200 << UM6_BAUD_START_BIT;
   r.communication.set(0, comm_reg);
-  sensor.send(r.communication); 
-
-  if (ros::param::has("~mag_ref"))
-  {
-    double x, y, z;
-    ros::param::get("~mag_ref/x", x);
-    ros::param::get("~mag_ref/y", y);
-    ros::param::get("~mag_ref/z", z);
-    ROS_INFO("Configuring magnetic reference vector to (%lf, %lf, %lf)", x, y, z);
-    r.mag_ref.set_scaled(0, x);
-    r.mag_ref.set_scaled(1, y);
-    r.mag_ref.set_scaled(2, z);
-    sensor.send(r.mag_ref);
+  if (!sensor.sendWaitAck(r.communication)) {
+    throw std::runtime_error("Unable to set configuration register.");
   }
+
+  // Configurable vectors.
+  configureVector3(sensor, r.mag_ref, "~mag_ref", "magnetic reference vector");
+  configureVector3(sensor, r.accel_ref, "~accel_ref", "accelerometer reference vector");
+  configureVector3(sensor, r.mag_bias, "~mag_bias", "magnetic bias vector");
+  configureVector3(sensor, r.accel_bias, "~accel_bias", "accelerometer bias vector");
+  configureVector3(sensor, r.gyro_bias, "~gyro_bias", "gyroscope bias vector");
 }
 
 /**
@@ -60,16 +88,30 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle& n, std_msgs::Header& header
 
     // IMU outputs [w,x,y,z] NED, convert to [x,y,z,w] ENU
     imu_msg.orientation.x = r.quat.get_scaled(2);
-    imu_msg.orientation.x = r.quat.get_scaled(1);
-    imu_msg.orientation.x = -r.quat.get_scaled(3);
-    imu_msg.orientation.x = r.quat.get_scaled(0);
+    imu_msg.orientation.y = r.quat.get_scaled(1);
+    imu_msg.orientation.z = -r.quat.get_scaled(3);
+    imu_msg.orientation.w = r.quat.get_scaled(0);
+
+    // IMU reports a 4x4 wxyz covariance, ROS requires only 3x3 xyz.
+    // NED -> ENU conversion req'd?
+    imu_msg.orientation_covariance[0] = r.covariance.get_scaled(5);
+    imu_msg.orientation_covariance[1] = r.covariance.get_scaled(6);
+    imu_msg.orientation_covariance[2] = r.covariance.get_scaled(7);
+    imu_msg.orientation_covariance[3] = r.covariance.get_scaled(9);
+    imu_msg.orientation_covariance[4] = r.covariance.get_scaled(10);
+    imu_msg.orientation_covariance[5] = r.covariance.get_scaled(11);
+    imu_msg.orientation_covariance[6] = r.covariance.get_scaled(13);
+    imu_msg.orientation_covariance[7] = r.covariance.get_scaled(14);
+    imu_msg.orientation_covariance[8] = r.covariance.get_scaled(15);
 
     // NED -> ENU conversion.
     imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
     imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
     imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
-    imu_msg.linear_acceleration.x = -r.accel.get_scaled(1);
-    imu_msg.linear_acceleration.y = -r.accel.get_scaled(0);
+
+    // NED -> ENU conversion.
+    imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
+    imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
     imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
 
     imu_pub.publish(imu_msg);
@@ -116,7 +158,7 @@ int main(int argc, char **argv)
   serial::Serial ser;
   ser.setPort(port);
   ser.setBaudrate(baud);
-  serial::Timeout to = serial::Timeout::simpleTimeout(500);
+  serial::Timeout to = serial::Timeout::simpleTimeout(100);
   ser.setTimeout(to);
 
   ros::NodeHandle n;
@@ -135,11 +177,11 @@ int main(int argc, char **argv)
       first_failure = true;
       try {
         um6::Comms sensor(ser);
-        configureSensor(sensor); 
+        configureSensor(sensor);
 
         um6::Registers registers;
         while(ros::ok()) {
-          if (sensor.receive(registers) == TRIGGER_PACKET) {
+          if (sensor.receive(&registers) == TRIGGER_PACKET) {
             // Triggered by arrival of final message in group.
             header.stamp = ros::Time::now();
             publishMsgs(registers, n, header);

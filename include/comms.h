@@ -26,11 +26,11 @@ class Comms
      * Otherwise, returns the 8-bit register number of the successfully
      * returned packet.
      */
-    int16_t receive(Registers&);
+    int16_t receive(Registers*);
 
     void send(Accessor_&);
 
-    void sendWaitAck(Accessor_&);
+    bool sendWaitAck(Accessor_&);
 };
 
 }

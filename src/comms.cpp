@@ -15,7 +15,7 @@ const uint8_t PACKET_BATCH_LENGTH_MASK = 0x0F;
 const uint8_t PACKET_BATCH_LENGTH_OFFSET = 2;
 
 
-int16_t Comms::receive(Registers& registers) {
+int16_t Comms::receive(Registers* registers = NULL) {
   int16_t successful_packet = -1;
 
   // Search the serial stream for a start-of-packet sequence.
@@ -29,6 +29,7 @@ int16_t Comms::receive(Registers& registers) {
     serial_.read(&type, 1);
     serial_.read(&address, 1);
     checksum_calculated += type + address;
+    std::string data;
     if (type & PACKET_HAS_DATA) {
       uint8_t data_length = 1;
       if (type & PACKET_IS_BATCH) {
@@ -39,59 +40,76 @@ int16_t Comms::receive(Registers& registers) {
       }
 
       // Read data bytes initially into a buffer so that we can compute the checksum.
-      std::string data;
       serial_.read(data, data_length * 4);
       BOOST_FOREACH(uint8_t ch, data)
         checksum_calculated += ch;
-   
-      // Compare computed checksum with transmitted value.
-      uint16_t checksum_transmitted; 
-      serial_.read((uint8_t*)&checksum_transmitted, 2);
-      checksum_transmitted = ntohs(checksum_transmitted);
-      if (checksum_transmitted == checksum_calculated) {
-        // Copy data from checksum buffer into registers.
-        // Byte-order correction (as necessary) happens at access-time.
-        registers.write_raw(address, data);
-        successful_packet = address;
-      } else {
-        ROS_WARN("Discarding packet due to bad checksum.");
-        ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
-            checksum_calculated, checksum_transmitted);
-      }
     } else {
       ROS_DEBUG("Received packet %02x without data.", address);
     }
-
+   
+    // Compare computed checksum with transmitted value.
+    uint16_t checksum_transmitted; 
+    serial_.read((uint8_t*)&checksum_transmitted, 2);
+    checksum_transmitted = ntohs(checksum_transmitted);
+    if (checksum_transmitted == checksum_calculated) {
+      // Copy data from checksum buffer into registers, if specified.
+      // Note that byte-order correction (as necessary) happens at access-time.
+      if ((type & PACKET_HAS_DATA) and registers) {
+        registers->write_raw(address, data);
+      }
+      successful_packet = address;
+    } else {
+      ROS_WARN("Discarding packet due to bad checksum.");
+      ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
+                checksum_calculated, checksum_transmitted);
+    }
   }
   first_spin_ = false;
   return successful_packet;
 }
 
-
 void Comms::send(Accessor_& r) {
   
-  std::stringstream ss("snp");
+  std::stringstream ss(std::stringstream::out | std::stringstream::binary);
+  ss << "snp";
+
   uint8_t type;
-  if (r.length > 0) type |= PACKET_HAS_DATA;
+  if (r.length > 0)
+    type |= PACKET_HAS_DATA;
   if (r.length > 1) {
     type |= PACKET_IS_BATCH;
     type |= r.length << PACKET_BATCH_LENGTH_OFFSET;
   }
-  ss << type << r.index;
-
   std::string data((char*)r.raw(), r.length * 4);
-  ss << data;
+  ss << type << r.index << data;
 
   uint16_t checksum = 0;
-  BOOST_FOREACH(uint8_t ch, ss.str())
+  std::string checksum_string = ss.str();
+  BOOST_FOREACH(uint8_t ch, checksum_string)
     checksum += ch;
-
-  ss << checksum;
+  checksum = htons(checksum);
+  ss << std::string((char*)&checksum, sizeof(checksum));
+  
   serial_.write(ss.str());
 }
 
-void Comms::sendWaitAck(Accessor_&) {
-
+bool Comms::sendWaitAck(Accessor_& r) {
+  const uint8_t tries = 5;
+  for(uint8_t t = 0; t < tries; t++) {
+    send(r);
+    const uint8_t listens = 20;
+    for(uint8_t i = 0; i < listens; i++) {
+      int16_t received = receive();
+      if (received == r.index) {
+        ROS_DEBUG("Message %02x ack received.", received);
+        return true;
+      } else if (received == -1) {
+        ROS_DEBUG("Serial read timed out waiting for ack. Attempting to retransmit.");
+        break;
+      }
+    } 
+  }
+  return false;
 }
 
 }
