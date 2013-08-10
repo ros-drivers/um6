@@ -53,7 +53,7 @@
 
 namespace um6 {
 
-inline static void memcpy_network(void* dest, void* src, size_t count) {
+inline void memcpy_network(void* dest, void* src, size_t count) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
   for (uint8_t i = 0; i < count; i++) {
     ((uint8_t*)dest)[i] = ((uint8_t*)src)[count - (i+1)]; 
