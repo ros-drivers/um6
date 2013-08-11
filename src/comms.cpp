@@ -43,11 +43,10 @@
 
 namespace um6 {
 
-const uint8_t PACKET_HAS_DATA = 1 << 7;
-const uint8_t PACKET_IS_BATCH = 1 << 6;
-const uint8_t PACKET_BATCH_LENGTH_MASK = 0x0F;
-const uint8_t PACKET_BATCH_LENGTH_OFFSET = 2;
-
+const uint8_t Comms::PACKET_HAS_DATA = 1 << 7;
+const uint8_t Comms::PACKET_IS_BATCH = 1 << 6;
+const uint8_t Comms::PACKET_BATCH_LENGTH_MASK = 0x0F;
+const uint8_t Comms::PACKET_BATCH_LENGTH_OFFSET = 2;
 
 int16_t Comms::receive(Registers* registers = NULL) {
   int16_t successful_packet = -1;
@@ -102,29 +101,35 @@ int16_t Comms::receive(Registers* registers = NULL) {
   return successful_packet;
 }
 
-void Comms::send(Accessor_& r) {
-  
-  std::stringstream ss(std::stringstream::out | std::stringstream::binary);
-  ss << "snp";
-
-  uint8_t type;
-  if (r.length > 0)
-    type |= PACKET_HAS_DATA;
-  if (r.length > 1) {
-    type |= PACKET_IS_BATCH;
-    type |= r.length << PACKET_BATCH_LENGTH_OFFSET;
-  }
-  std::string data((char*)r.raw(), r.length * 4);
-  ss << type << r.index << data;
-
-  uint16_t checksum = 0;
-  std::string checksum_string = ss.str();
-  BOOST_FOREACH(uint8_t ch, checksum_string)
+std::string Comms::checksum(std::string& s) {
+  uint16_t checksum;
+  BOOST_FOREACH(uint8_t ch, s)
     checksum += ch;
   checksum = htons(checksum);
-  ss << std::string((char*)&checksum, sizeof(checksum));
-  
-  serial_.write(ss.str());
+  return std::string((char*)&checksum, sizeof(checksum));
+}
+
+std::string Comms::message(uint8_t address, std::string data) {
+  uint8_t type;
+  if (data.length() > 0)
+    type |= PACKET_HAS_DATA;
+  if (data.length() > 4) {
+    type |= PACKET_IS_BATCH;
+    type |= (data.length() / 4) << PACKET_BATCH_LENGTH_OFFSET;
+  }
+
+  std::stringstream ss(std::stringstream::out | std::stringstream::binary);
+  ss << "snp" << type << address << data;
+  std::string checksum_string = ss.str();
+  ss << checksum(checksum_string);
+
+  return ss.str(); 
+}
+
+void Comms::send(Accessor_& r) {
+  uint8_t address = r.index;
+  std::string data((char*)r.raw(), r.length * 4);
+  serial_.write(message(r.index, data));
 }
 
 bool Comms::sendWaitAck(Accessor_& r) {

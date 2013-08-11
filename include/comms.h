@@ -34,6 +34,7 @@
 
 
 #include <stdint.h>
+#include <iostream>
 
 namespace serial {
   class Serial;
@@ -46,10 +47,6 @@ class Accessor_;
 
 class Comms
 {
-  private:
-    bool first_spin_;
-    serial::Serial& serial_;
-
   public:
     Comms(serial::Serial& s) : serial_(s), first_spin_(true) {
     }
@@ -65,6 +62,19 @@ class Comms
     void send(Accessor_&);
 
     bool sendWaitAck(Accessor_&);
+
+    static const uint8_t PACKET_HAS_DATA;
+    static const uint8_t PACKET_IS_BATCH;
+    static const uint8_t PACKET_BATCH_LENGTH_MASK;
+    static const uint8_t PACKET_BATCH_LENGTH_OFFSET;
+
+    static std::string checksum(std::string& s);
+
+    static std::string message(uint8_t address, std::string data);
+
+  private:
+    bool first_spin_;
+    serial::Serial& serial_;
 };
 
 }
