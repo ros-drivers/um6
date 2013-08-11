@@ -171,7 +171,7 @@ class Registers
 
     void write_raw(uint8_t register_index, std::string data) {
       if ((register_index - 1) + (data.length()/4 - 1) >= NUM_REGISTERS) {
-        throw std::invalid_argument("Index and length write beyond boundaries of register array.");
+        throw std::range_error("Index and length write beyond boundaries of register array.");
       }
       memcpy(&raw_[register_index], data.c_str(), data.length());
     }
