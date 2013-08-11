@@ -42,6 +42,10 @@ namespace serial {
 
 namespace um6 {
 
+class SerialTimeout : public std::exception {};
+
+class BadChecksum : public std::exception {};
+
 class Registers;
 class Accessor_;
 

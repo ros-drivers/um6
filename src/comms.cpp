@@ -49,18 +49,20 @@ const uint8_t Comms::PACKET_BATCH_LENGTH_MASK = 0x0F;
 const uint8_t Comms::PACKET_BATCH_LENGTH_OFFSET = 2;
 
 int16_t Comms::receive(Registers* registers = NULL) {
-  int16_t successful_packet = -1;
-
   // Search the serial stream for a start-of-packet sequence.
-  std::string snp;
-  serial_.readline(snp, 96, "snp");
-  if (boost::algorithm::ends_with(snp, "snp")) {
+  try {
+    std::string snp;
+    serial_.readline(snp, 96, "snp");
+    if (!boost::algorithm::ends_with(snp, "snp")) throw SerialTimeout();
+
     uint16_t checksum_calculated = 's' + 'n' + 'p';
     ROS_WARN_COND(!first_spin_ && snp.length() > 3, 
         "Discarded %ld junk byte(s) preceeding packet.", snp.length() - 3);
+    first_spin_ = false;
+
     uint8_t type, address;
-    serial_.read(&type, 1);
-    serial_.read(&address, 1);
+    if (serial_.read(&type, 1) != 1) throw SerialTimeout();
+    if (serial_.read(&address, 1) != 1) throw SerialTimeout();
     checksum_calculated += type + address;
     std::string data;
     if (type & PACKET_HAS_DATA) {
@@ -73,7 +75,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
       }
 
       // Read data bytes initially into a buffer so that we can compute the checksum.
-      serial_.read(data, data_length * 4);
+      if (serial_.read(data, data_length * 4) != data_length * 4) throw SerialTimeout();
       BOOST_FOREACH(uint8_t ch, data)
         checksum_calculated += ch;
     } else {
@@ -82,23 +84,27 @@ int16_t Comms::receive(Registers* registers = NULL) {
    
     // Compare computed checksum with transmitted value.
     uint16_t checksum_transmitted; 
-    serial_.read((uint8_t*)&checksum_transmitted, 2);
+    if (serial_.read((uint8_t*)&checksum_transmitted, 2) != 2) throw SerialTimeout();
     checksum_transmitted = ntohs(checksum_transmitted);
-    if (checksum_transmitted == checksum_calculated) {
-      // Copy data from checksum buffer into registers, if specified.
-      // Note that byte-order correction (as necessary) happens at access-time.
-      if ((type & PACKET_HAS_DATA) and registers) {
-        registers->write_raw(address, data);
-      }
-      successful_packet = address;
-    } else {
-      ROS_WARN("Discarding packet due to bad checksum.");
-      ROS_DEBUG("Computed checksum: %04x  Transmitted checksum: %04x", 
-                checksum_calculated, checksum_transmitted);
+    if (checksum_transmitted != checksum_calculated)
+      throw BadChecksum();
+
+    // Copy data from checksum buffer into registers, if specified.
+    // Note that byte-order correction (as necessary) happens at access-time.
+    if ((data.length() > 0) and registers) {
+      registers->write_raw(address, data);
     }
+
+    // Successful packet read, return address byte.
+    return address;
   }
-  first_spin_ = false;
-  return successful_packet;
+  catch (SerialTimeout& e) {
+    ROS_WARN("Timed out waiting for packet from device.");
+  } 
+  catch (BadChecksum& e) {
+    ROS_WARN("Discarding packet due to bad checksum.");
+  }
+  return -1;
 }
 
 std::string Comms::checksum(std::string& s) {
