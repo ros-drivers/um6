@@ -33,13 +33,15 @@
  *
  */
 
-#pragma once
+#ifndef INCLUDE_REGISTERS_H_
+#define INCLUDE_REGISTERS_H_
 
-#include <stdint.h>
-#include <string>
-#include <string.h>
 #include <endian.h>
+#include <stdint.h>
+#include <string.h>
+
 #include <stdexcept>
+#include <string>
 
 #include "firmware_registers.h"
 
@@ -56,10 +58,12 @@ namespace um6 {
 
 inline void memcpy_network(void* dest, void* src, size_t count) {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
+  uint8_t* d = reinterpret_cast<uint8_t*>(dest);
+  uint8_t* s = reinterpret_cast<uint8_t*>(src);
   for (uint8_t i = 0; i < count; i++) {
-    ((uint8_t*)dest)[i] = ((uint8_t*)src)[count - (i+1)]; 
+    d[i] = s[count - (i+1)];
   }
-#else  
+#else
   // Copy bytes without reversing.
   #warning Big-endian implementation is untested.
   memcpy(dest, src, count);
@@ -67,7 +71,7 @@ inline void memcpy_network(void* dest, void* src, size_t count) {
 }
 
 class Registers;
- 
+
 /**
  * This class provides an accessor of fields contained in one or more
  * consecutive UM6 registers. Each register is nominally a uint32_t, 
@@ -80,7 +84,7 @@ class Registers;
  */
 class Accessor_ {
   public:
-    Accessor_(Registers* registers, uint8_t register_index, 
+    Accessor_(Registers* registers, uint8_t register_index,
         uint8_t register_width, uint8_t array_length)
       : index(register_index), width(register_width),
         length(array_length), registers_(registers)
@@ -101,7 +105,7 @@ class Accessor_ {
      * Length of how many sub-register fields comprise this accessor. Not 
      * required to stay within the bounds of a single register. */
     const uint16_t length;
-    
+
   private:
     Registers* registers_;
 };
@@ -109,13 +113,14 @@ class Accessor_ {
 template<typename RegT>
 class Accessor : public Accessor_ {
   public:
-    Accessor(Registers* registers, uint8_t register_index, uint8_t array_length=0, double scale_factor=1.0)
+    Accessor(Registers* registers, uint8_t register_index, uint8_t array_length = 0, double scale_factor = 1.0)
       : Accessor_(registers, register_index, sizeof(RegT), array_length), scale_(scale_factor)
     {}
 
     RegT get(uint8_t field) {
+      RegT* raw_ptr = reinterpret_cast<RegT*>(raw());
       RegT value;
-      memcpy_network(&value, (RegT*)raw() + field, sizeof(value));
+      memcpy_network(&value, raw_ptr + field, sizeof(value));
       return value;
     }
 
@@ -124,7 +129,8 @@ class Accessor : public Accessor_ {
     }
 
     void set(uint8_t field, RegT value) {
-      memcpy_network((RegT*)raw() + field, &value, sizeof(value));
+      RegT* raw_ptr = reinterpret_cast<RegT*>(raw());
+      memcpy_network(raw_ptr + field, &value, sizeof(value));
     }
 
     void set_scaled(uint16_t field, double value) {
@@ -132,11 +138,10 @@ class Accessor : public Accessor_ {
     }
 
   private:
-    const double scale_; 
+    const double scale_;
 };
 
-class Registers
-{
+class Registers {
   public:
     Registers() :
       gyro_raw(this, UM6_GYRO_RAW_XY, 3),
@@ -154,8 +159,7 @@ class Registers
       accel_ref(this, UM6_ACCEL_REF_X, 3),
       gyro_bias(this, UM6_GYRO_BIAS_XY, 3),
       accel_bias(this, UM6_ACCEL_BIAS_XY, 3),
-      mag_bias(this, UM6_MAG_BIAS_XY, 3)
-    {
+      mag_bias(this, UM6_MAG_BIAS_XY, 3) {
       memset(raw_, 0, sizeof(raw_));
     }
 
@@ -181,5 +185,6 @@ class Registers
 
   friend class Accessor_;
 };
-
 }
+
+#endif  // INCLUDE_REGISTERS_H_

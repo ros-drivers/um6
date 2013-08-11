@@ -37,7 +37,7 @@ FILE(GLOB LINT_SRCS src/*.cpp include/*.h)
 FILE(GLOB NOLINT_SRCS include/firmware_registers.h)
 LIST(REMOVE_ITEM LINT_SRCS ${NOLINT_SRCS})
 add_custom_target(${PROJECT_NAME}_cpplint
-  COMMAND cpplint --filter=-whitespace/line-length ${LINT_SRCS})
+  COMMAND cpplint --filter=-whitespace/line_length,-build/include,+build/include_ ${LINT_SRCS})
 
 #############
 ## Testing ##
