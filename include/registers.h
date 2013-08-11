@@ -39,6 +39,7 @@
 #include <string>
 #include <string.h>
 #include <endian.h>
+#include <stdexcept>
 
 #include "firmware_registers.h"
 
@@ -169,6 +170,9 @@ class Registers
     Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
 
     void write_raw(uint8_t register_index, std::string data) {
+      if ((register_index - 1) + (data.length()/4 - 1) >= NUM_REGISTERS) {
+        throw std::invalid_argument("Index and length write beyond boundaries of register array.");
+      }
       memcpy(&raw_[register_index], data.c_str(), data.length());
     }
 
