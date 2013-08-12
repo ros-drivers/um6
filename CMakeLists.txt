@@ -1,50 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(um6)
+cmake_minimum_required(VERSION 2.4.6)
+include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
-find_package(catkin REQUIRED COMPONENTS roscpp serial sensor_msgs)
+rosbuild_init()
 
-catkin_package(
-   INCLUDE_DIRS include
-)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-###########
-## Build ##
-###########
+rosbuild_add_executable(um6_driver src/main.cpp src/comms.cpp src/registers.cpp serial/src/serial.cc serial/src/impl/unix.cc)
+include_directories(serial/include)
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(include
-  ${catkin_INCLUDE_DIRS}
-)
-
-## Declare a cpp executable
-add_executable(um6_driver src/main.cpp src/registers.cpp src/comms.cpp)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(um6_driver
-  ${catkin_LIBRARIES}
-)
-
-##########
-## Docs ##
-##########
-
-add_custom_target (${PROJECT_NAME}_doc 
-  rosdoc_lite -o ${CATKIN_DEVEL_PREFIX}/doc/${PROJECT_NAME} ${CATKIN_DEVEL_PREFIX}/../src/${PROJECT_NAME}
-)
-
-FILE(GLOB LINT_SRCS src/*.cpp include/*.h)
-FILE(GLOB NOLINT_SRCS include/firmware_registers.h)
-LIST(REMOVE_ITEM LINT_SRCS ${NOLINT_SRCS})
-add_custom_target(${PROJECT_NAME}_cpplint
-  COMMAND cpplint --filter=-whitespace/line_length,-build/include,+build/include_ ${LINT_SRCS})
-
-#############
-## Testing ##
-#############
-
-catkin_add_gtest(${PROJECT_NAME}_test_registers test/test_registers.cpp src/registers.cpp)
-catkin_add_gtest(${PROJECT_NAME}_test_comms test/test_comms.cpp src/comms.cpp src/registers.cpp)
-if(TARGET ${PROJECT_NAME}_test_comms)
-  target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
-endif()
+rosbuild_add_boost_directories()
