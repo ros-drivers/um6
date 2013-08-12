@@ -114,6 +114,7 @@ std::string Comms::checksum(const std::string& s) {
   BOOST_FOREACH(uint8_t ch, s)
     checksum += ch;
   checksum = htons(checksum);
+  ROS_DEBUG("Computed checksum on string of length %ld as %04x.", s.length(), checksum);
   return std::string((char*)&checksum, sizeof(checksum));
 }
 
@@ -128,10 +129,12 @@ std::string Comms::message(uint8_t address, std::string data) {
 
   std::stringstream ss(std::stringstream::out | std::stringstream::binary);
   ss << "snp" << type << address << data;
-  std::string checksum_string = ss.str();
-  ss << checksum(checksum_string);
-
-  return ss.str();
+  std::string output = ss.str();
+  std::string c = checksum(output);
+  ss << c;
+  output = ss.str();
+  ROS_DEBUG("Generated message %02x of overall length %ld.", address, output.length());
+  return output;
 }
 
 void Comms::send(const Accessor_& r) const {
