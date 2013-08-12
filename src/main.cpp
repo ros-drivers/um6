@@ -32,16 +32,17 @@
  * Please send comments, questions, or patches to code@clearpathrobotics.com 
  *
  */
+#include <string>
 
-#include "ros/ros.h"
-#include "serial/serial.h"
-#include "sensor_msgs/Imu.h"
+#include "comms.h"
 #include "geometry_msgs/Vector3Stamped.h"
+#include "registers.h"
+#include "ros/ros.h"
+#include "sensor_msgs/Imu.h"
+#include "serial/serial.h"
 #include "std_msgs/Float32.h"
 #include "std_msgs/Header.h"
 
-#include "registers.h"
-#include "comms.h"
 
 
 // Don't try to be too clever. Arrival of this message triggers
@@ -53,14 +54,13 @@ const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
  * fields in UM6 registers.
  */
 template<typename RegT>
-void configureVector3(um6::Comms& sensor, um6::Accessor<RegT>& reg,
+void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
     std::string param, std::string human_name) {
   if (reg.length != 3) {
     throw std::logic_error("configureVector3 may only be used with 3-field registers!");
   }
 
-  if (ros::param::has(param))
-  {
+  if (ros::param::has(param)) {
     double x, y, z;
     ros::param::get(param + "/x", x);
     ros::param::get(param + "/y", y);
@@ -70,9 +70,8 @@ void configureVector3(um6::Comms& sensor, um6::Accessor<RegT>& reg,
     reg.set_scaled(0, x);
     reg.set_scaled(1, y);
     reg.set_scaled(2, z);
-    if (!sensor.sendWaitAck(reg)) {
-
-      throw std::runtime_error("Unable to configure "); // << human_name);
+    if (sensor->sendWaitAck(reg)) {
+      throw std::runtime_error("Unable to configure ");
     }
   }
 }
@@ -81,18 +80,17 @@ void configureVector3(um6::Comms& sensor, um6::Accessor<RegT>& reg,
  * Send configuration messages to the UM6, critically, to turn on the value outputs
  * which we require, and inject necessary configuration parameters.
  */
-void configureSensor(um6::Comms& sensor)
-{
+void configureSensor(um6::Comms* sensor) {
   um6::Registers r;
 
   // Enable outputs we need.
   const uint8_t UM6_BAUD_115200 = 0x5;
   uint32_t comm_reg = UM6_BROADCAST_ENABLED |
-      UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED | 
+      UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED |
       UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED |
       UM6_BAUD_115200 << UM6_BAUD_START_BIT;
   r.communication.set(0, comm_reg);
-  if (!sensor.sendWaitAck(r.communication)) {
+  if (!sensor->sendWaitAck(r.communication)) {
     throw std::runtime_error("Unable to set configuration register.");
   }
 
@@ -108,12 +106,11 @@ void configureSensor(um6::Comms& sensor)
  * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Registers& r, ros::NodeHandle& n, std_msgs::Header& header)
-{
-  static ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>("imu/data", 1, false);
-  static ros::Publisher mag_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/mag", 1, false);
-  static ros::Publisher rpy_pub = n.advertise<geometry_msgs::Vector3Stamped>("imu/rpy", 1, false);
-  static ros::Publisher temp_pub = n.advertise<std_msgs::Float32>("imu/temperature", 1, false);
+void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& header) {
+  static ros::Publisher imu_pub = n->advertise<sensor_msgs::Imu>("imu/data", 1, false);
+  static ros::Publisher mag_pub = n->advertise<geometry_msgs::Vector3Stamped>("imu/mag", 1, false);
+  static ros::Publisher rpy_pub = n->advertise<geometry_msgs::Vector3Stamped>("imu/rpy", 1, false);
+  static ros::Publisher temp_pub = n->advertise<std_msgs::Float32>("imu/temperature", 1, false);
 
   if (imu_pub.getNumSubscribers() > 0) {
     sensor_msgs::Imu imu_msg;
@@ -178,8 +175,7 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle& n, std_msgs::Header& header
 /**
  * Node entry-point. Handles ROS setup, and serial port connection/reconnection.
  */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "um6_driver");
 
   // Load parameters from private node handle.
@@ -202,7 +198,7 @@ int main(int argc, char **argv)
   while (ros::ok()) {
     try {
       ser.open();
-    } catch (serial::IOException& e) {
+    } catch(const serial::IOException& e) {
       ROS_DEBUG("Unable to connect to port.");
     }
     if (ser.isOpen()) {
@@ -210,24 +206,25 @@ int main(int argc, char **argv)
       first_failure = true;
       try {
         um6::Comms sensor(ser);
-        configureSensor(sensor);
+        configureSensor(&sensor);
 
         um6::Registers registers;
-        while(ros::ok()) {
+        while (ros::ok()) {
           if (sensor.receive(&registers) == TRIGGER_PACKET) {
             // Triggered by arrival of final message in group.
             header.stamp = ros::Time::now();
-            publishMsgs(registers, n, header);
+            publishMsgs(registers, &n, header);
           }
         }
-      } catch (std::exception& e) {
+      } catch(const std::exception& e) {
         if (ser.isOpen()) ser.close();
         ROS_ERROR_STREAM(e.what());
         ROS_INFO("Attempting reconnection after error.");
         ros::Duration(1.0).sleep();
       }
     } else {
-      ROS_WARN_STREAM_COND(first_failure, "Could not connect to serial device " << port << ". Trying again every 1 second.");
+      ROS_WARN_STREAM_COND(first_failure, "Could not connect to serial device "
+          << port << ". Trying again every 1 second.");
       first_failure = false;
       ros::Duration(1.0).sleep();
     }

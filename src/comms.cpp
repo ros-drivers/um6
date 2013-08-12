@@ -33,13 +33,15 @@
  */
 
 #include "comms.h"
-#include "registers.h"
 
-#include "ros/console.h"
-#include "serial/serial.h"
+#include <arpa/inet.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
-#include <arpa/inet.h>
+#include <string>
+
+#include "registers.h"
+#include "ros/console.h"
+#include "serial/serial.h"
 
 namespace um6 {
 
@@ -56,7 +58,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
     if (!boost::algorithm::ends_with(snp, "snp")) throw SerialTimeout();
 
     uint16_t checksum_calculated = 's' + 'n' + 'p';
-    ROS_WARN_COND(!first_spin_ && snp.length() > 3, 
+    ROS_WARN_COND(!first_spin_ && snp.length() > 3,
         "Discarded %ld junk byte(s) preceeding packet.", snp.length() - 3);
     first_spin_ = false;
 
@@ -81,10 +83,10 @@ int16_t Comms::receive(Registers* registers = NULL) {
     } else {
       ROS_DEBUG("Received packet %02x without data.", address);
     }
-   
+
     // Compare computed checksum with transmitted value.
-    uint16_t checksum_transmitted; 
-    if (serial_.read((uint8_t*)&checksum_transmitted, 2) != 2) throw SerialTimeout();
+    uint16_t checksum_transmitted;
+    if (serial_.read(reinterpret_cast<uint8_t*>(&checksum_transmitted), 2) != 2) throw SerialTimeout();
     checksum_transmitted = ntohs(checksum_transmitted);
     if (checksum_transmitted != checksum_calculated)
       throw BadChecksum();
@@ -98,16 +100,16 @@ int16_t Comms::receive(Registers* registers = NULL) {
     // Successful packet read, return address byte.
     return address;
   }
-  catch (SerialTimeout& e) {
+  catch(const SerialTimeout& e) {
     ROS_WARN("Timed out waiting for packet from device.");
-  } 
-  catch (BadChecksum& e) {
+  }
+  catch(const BadChecksum& e) {
     ROS_WARN("Discarding packet due to bad checksum.");
   }
   return -1;
 }
 
-std::string Comms::checksum(std::string& s) {
+std::string Comms::checksum(const std::string& s) {
   uint16_t checksum;
   BOOST_FOREACH(uint8_t ch, s)
     checksum += ch;
@@ -129,21 +131,21 @@ std::string Comms::message(uint8_t address, std::string data) {
   std::string checksum_string = ss.str();
   ss << checksum(checksum_string);
 
-  return ss.str(); 
+  return ss.str();
 }
 
-void Comms::send(Accessor_& r) {
+void Comms::send(const Accessor_& r) const {
   uint8_t address = r.index;
   std::string data((char*)r.raw(), r.length * 4);
   serial_.write(message(r.index, data));
 }
 
-bool Comms::sendWaitAck(Accessor_& r) {
+bool Comms::sendWaitAck(const Accessor_& r) {
   const uint8_t tries = 5;
-  for(uint8_t t = 0; t < tries; t++) {
+  for (uint8_t t = 0; t < tries; t++) {
     send(r);
     const uint8_t listens = 20;
-    for(uint8_t i = 0; i < listens; i++) {
+    for (uint8_t i = 0; i < listens; i++) {
       int16_t received = receive();
       if (received == r.index) {
         ROS_DEBUG("Message %02x ack received.", received);
@@ -152,9 +154,8 @@ bool Comms::sendWaitAck(Accessor_& r) {
         ROS_DEBUG("Serial read timed out waiting for ack. Attempting to retransmit.");
         break;
       }
-    } 
+    }
   }
   return false;
 }
-
-}
+}  // um6

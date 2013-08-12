@@ -32,9 +32,11 @@
  *
  */
 
+#ifndef INCLUDE_COMMS_H_
+#define INCLUDE_COMMS_H_
 
 #include <stdint.h>
-#include <iostream>
+#include <string>
 
 namespace serial {
   class Serial;
@@ -49,10 +51,9 @@ class BadChecksum : public std::exception {};
 class Registers;
 class Accessor_;
 
-class Comms
-{
+class Comms {
   public:
-    Comms(serial::Serial& s) : serial_(s), first_spin_(true) {
+    explicit Comms(serial::Serial& s) : serial_(s), first_spin_(true) {
     }
 
     /**
@@ -61,18 +62,18 @@ class Comms
      * Otherwise, returns the 8-bit register number of the successfully
      * returned packet.
      */
-    int16_t receive(Registers*);
+    int16_t receive(Registers* r);
 
-    void send(Accessor_&);
+    void send(const Accessor_& a) const;
 
-    bool sendWaitAck(Accessor_&);
+    bool sendWaitAck(const Accessor_& a);
 
     static const uint8_t PACKET_HAS_DATA;
     static const uint8_t PACKET_IS_BATCH;
     static const uint8_t PACKET_BATCH_LENGTH_MASK;
     static const uint8_t PACKET_BATCH_LENGTH_OFFSET;
 
-    static std::string checksum(std::string& s);
+    static std::string checksum(const std::string& s);
 
     static std::string message(uint8_t address, std::string data);
 
@@ -80,5 +81,7 @@ class Comms
     bool first_spin_;
     serial::Serial& serial_;
 };
-
 }
+
+#endif  // INCLUDE_COMMS_H_
+

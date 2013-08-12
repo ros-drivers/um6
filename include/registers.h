@@ -90,7 +90,7 @@ class Accessor_ {
         length(array_length), registers_(registers)
     {}
 
-    void* raw();
+    void* raw() const;
 
     /** 
      * Number/address of the register in the array of uint32s which is
@@ -117,23 +117,23 @@ class Accessor : public Accessor_ {
       : Accessor_(registers, register_index, sizeof(RegT), array_length), scale_(scale_factor)
     {}
 
-    RegT get(uint8_t field) {
+    RegT get(uint8_t field) const {
       RegT* raw_ptr = reinterpret_cast<RegT*>(raw());
       RegT value;
       memcpy_network(&value, raw_ptr + field, sizeof(value));
       return value;
     }
 
-    double get_scaled(uint16_t field) {
+    double get_scaled(uint16_t field) const {
       return get(field) * scale_;
     }
 
-    void set(uint8_t field, RegT value) {
+    void set(uint8_t field, RegT value) const {
       RegT* raw_ptr = reinterpret_cast<RegT*>(raw());
       memcpy_network(raw_ptr + field, &value, sizeof(value));
     }
 
-    void set_scaled(uint16_t field, double value) {
+    void set_scaled(uint16_t field, double value) const {
       set(field, value / scale_);
     }
 
@@ -164,14 +164,14 @@ class Registers {
     }
 
     // Data
-    Accessor<int16_t> gyro_raw, accel_raw, mag_raw;
-    Accessor<int16_t> gyro, accel, mag, euler, quat;
-    Accessor<float> covariance, temperature;
+    const Accessor<int16_t> gyro_raw, accel_raw, mag_raw;
+    const Accessor<int16_t> gyro, accel, mag, euler, quat;
+    const Accessor<float> covariance, temperature;
 
     // Configs
-    Accessor<uint32_t> communication;
-    Accessor<float> mag_ref, accel_ref;
-    Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
+    const Accessor<uint32_t> communication;
+    const Accessor<float> mag_ref, accel_ref;
+    const Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
 
     void write_raw(uint8_t register_index, std::string data) {
       if ((register_index - 1) + (data.length()/4 - 1) >= NUM_REGISTERS) {

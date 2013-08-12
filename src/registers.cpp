@@ -36,7 +36,7 @@
 
 namespace um6 {
 
-void* Accessor_::raw() {
+void* Accessor_::raw() const {
   /**
    * This is ridiculous to have a whole source file for this tiny implementation,
    * but it's necessary to resolve the otherwise circular dependency between the
@@ -45,5 +45,4 @@ void* Accessor_::raw() {
    */
   return &registers_->raw_[index];
 }
-
 }
