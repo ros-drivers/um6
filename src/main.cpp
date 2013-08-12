@@ -71,7 +71,7 @@ void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
     reg.set_scaled(1, y);
     reg.set_scaled(2, z);
     if (sensor->sendWaitAck(reg)) {
-      throw std::runtime_error("Unable to configure ");
+      throw std::runtime_error("Unable to configure vector.");
     }
   }
 }
@@ -91,7 +91,27 @@ void configureSensor(um6::Comms* sensor) {
       UM6_BAUD_115200 << UM6_BAUD_START_BIT;
   r.communication.set(0, comm_reg);
   if (!sensor->sendWaitAck(r.communication)) {
-    throw std::runtime_error("Unable to set configuration register.");
+    throw std::runtime_error("Unable to set communication register.");
+  }
+
+  // Optionally disable mag and accel updates in the sensor's EKF.
+  bool mag_updates, accel_updates;
+  ros::param::param<bool>("~mag_updates", mag_updates, true);
+  ros::param::param<bool>("~accel_updates", accel_updates, true);
+  uint32_t misc_config_reg = UM6_QUAT_ESTIMATE_ENABLED;
+  if (mag_updates) {
+    misc_config_reg |= UM6_MAG_UPDATE_ENABLED;
+  } else {
+    ROS_WARN("Excluding magnetometer updates from EKF.");
+  }
+  if (accel_updates) {
+    misc_config_reg |= UM6_ACCEL_UPDATE_ENABLED;
+  } else {
+    ROS_WARN("Excluding accelerometer updates from EKF.");
+  }
+  r.misc_config.set(0, misc_config_reg);
+  if (!sensor->sendWaitAck(r.misc_config)) {
+    throw std::runtime_error("Unable to set misc config register.");
   }
 
   // Configurable vectors.
