@@ -32,8 +32,8 @@
  *
  */
 
-#ifndef INCLUDE_COMMS_H_
-#define INCLUDE_COMMS_H_
+#ifndef INCLUDE_UM6_COMMS_H_
+#define INCLUDE_UM6_COMMS_H_
 
 #include <stdint.h>
 #include <string>
@@ -83,5 +83,5 @@ class Comms {
 };
 }
 
-#endif  // INCLUDE_COMMS_H_
+#endif  // INCLUDE_UM6_COMMS_H_
 
