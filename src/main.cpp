@@ -34,16 +34,14 @@
  */
 #include <string>
 
-#include "comms.h"
 #include "geometry_msgs/Vector3Stamped.h"
-#include "registers.h"
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
 #include "serial/serial.h"
 #include "std_msgs/Float32.h"
 #include "std_msgs/Header.h"
-
-
+#include "um6/comms.h"
+#include "um6/registers.h"
 
 // Don't try to be too clever. Arrival of this message triggers
 // us to publish everything we have.

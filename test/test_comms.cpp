@@ -1,5 +1,5 @@
-#include "comms.h"
-#include "registers.h"
+#include "um6/comms.h"
+#include "um6/registers.h"
 #include "serial/serial.h"
 #include <gtest/gtest.h>
 #include <fcntl.h>

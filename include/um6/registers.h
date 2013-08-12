@@ -33,8 +33,8 @@
  *
  */
 
-#ifndef INCLUDE_REGISTERS_H_
-#define INCLUDE_REGISTERS_H_
+#ifndef INCLUDE_UM6_REGISTERS_H_
+#define INCLUDE_UM6_REGISTERS_H_
 
 #include <endian.h>
 #include <stdint.h>
@@ -187,4 +187,4 @@ class Registers {
 };
 }
 
-#endif  // INCLUDE_REGISTERS_H_
+#endif  // INCLUDE_UM6_REGISTERS_H_
