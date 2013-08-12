@@ -121,7 +121,7 @@ std::string Comms::checksum(const std::string& s) {
 }
 
 std::string Comms::message(uint8_t address, std::string data) {
-  uint8_t type;
+  uint8_t type = 0;
   if (data.length() > 0)
     type |= PACKET_HAS_DATA;
   if (data.length() > 4) {
