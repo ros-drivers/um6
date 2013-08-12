@@ -43,7 +43,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "firmware_registers.h"
+#include "um6/firmware_registers.h"
 
 #define PI 3.14159265359
 #define TO_RADIANS (PI / 180.0)
@@ -155,6 +155,8 @@ class Registers {
       covariance(this, UM6_ERROR_COV_00, 16),
       temperature(this, UM6_TEMPERATURE, 1),
       communication(this, UM6_COMMUNICATION, 1),
+      misc_config(this, UM6_MISC_CONFIG, 1),
+      status(this, UM6_STATUS, 1),
       mag_ref(this, UM6_MAG_REF_X, 3),
       accel_ref(this, UM6_ACCEL_REF_X, 3),
       gyro_bias(this, UM6_GYRO_BIAS_XY, 3),
@@ -169,7 +171,7 @@ class Registers {
     const Accessor<float> covariance, temperature;
 
     // Configs
-    const Accessor<uint32_t> communication;
+    const Accessor<uint32_t> communication, misc_config, status;
     const Accessor<float> mag_ref, accel_ref;
     const Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
 
