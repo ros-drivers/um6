@@ -110,12 +110,14 @@ int16_t Comms::receive(Registers* registers = NULL) {
 }
 
 std::string Comms::checksum(const std::string& s) {
-  uint16_t checksum;
+  uint16_t checksum = 0;
   BOOST_FOREACH(uint8_t ch, s)
     checksum += ch;
   checksum = htons(checksum);
   ROS_DEBUG("Computed checksum on string of length %ld as %04x.", s.length(), checksum);
-  return std::string((char*)&checksum, sizeof(checksum));
+  std::string out(2, 0);
+  memcpy(&out[0], &checksum, 2);
+  return out;
 }
 
 std::string Comms::message(uint8_t address, std::string data) {
