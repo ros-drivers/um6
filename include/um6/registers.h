@@ -37,6 +37,7 @@
 #define INCLUDE_UM6_REGISTERS_H_
 
 #include <endian.h>
+#include <math.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -45,9 +46,8 @@
 
 #include "um6/firmware_registers.h"
 
-#define PI 3.14159265359
-#define TO_RADIANS (PI / 180.0)
-#define TO_DEGREES (180.0 / PI)
+#define TO_RADIANS (M_PI / 180.0)
+#define TO_DEGREES (180.0 / M_PI)
 
 // This excludes the command registers, which are always sent
 // and received with no data.

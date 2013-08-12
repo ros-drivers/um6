@@ -78,18 +78,22 @@ int16_t Comms::receive(Registers* registers = NULL) {
 
       // Read data bytes initially into a buffer so that we can compute the checksum.
       if (serial_.read(data, data_length * 4) != data_length * 4) throw SerialTimeout();
-      BOOST_FOREACH(uint8_t ch, data)
+      BOOST_FOREACH(uint8_t ch, data) {
         checksum_calculated += ch;
+      }
     } else {
       ROS_DEBUG("Received packet %02x without data.", address);
     }
 
     // Compare computed checksum with transmitted value.
     uint16_t checksum_transmitted;
-    if (serial_.read(reinterpret_cast<uint8_t*>(&checksum_transmitted), 2) != 2) throw SerialTimeout();
+    if (serial_.read(reinterpret_cast<uint8_t*>(&checksum_transmitted), 2) != 2) {
+      throw SerialTimeout();
+    }
     checksum_transmitted = ntohs(checksum_transmitted);
-    if (checksum_transmitted != checksum_calculated)
+    if (checksum_transmitted != checksum_calculated) {
       throw BadChecksum();
+    }
 
     // Copy data from checksum buffer into registers, if specified.
     // Note that byte-order correction (as necessary) happens at access-time.
@@ -111,8 +115,9 @@ int16_t Comms::receive(Registers* registers = NULL) {
 
 std::string Comms::checksum(const std::string& s) {
   uint16_t checksum = 0;
-  BOOST_FOREACH(uint8_t ch, s)
+  BOOST_FOREACH(uint8_t ch, s) {
     checksum += ch;
+  }
   checksum = htons(checksum);
   ROS_DEBUG("Computed checksum on string of length %ld as %04x.", s.length(), checksum);
   std::string out(2, 0);
@@ -122,8 +127,9 @@ std::string Comms::checksum(const std::string& s) {
 
 std::string Comms::message(uint8_t address, std::string data) {
   uint8_t type = 0;
-  if (data.length() > 0)
+  if (data.length() > 0) {
     type |= PACKET_HAS_DATA;
+  }
   if (data.length() > 4) {
     type |= PACKET_IS_BATCH;
     type |= (data.length() / 4) << PACKET_BATCH_LENGTH_OFFSET;
