@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(um6)
 
-find_package(catkin REQUIRED COMPONENTS roscpp serial sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp serial sensor_msgs message_generation)
+
+add_service_files(
+  FILES
+  Reset.srv
+)
+
+generate_messages()
 
 catkin_package(
    INCLUDE_DIRS include
+   CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -19,11 +27,8 @@ include_directories(include
 
 ## Declare a cpp executable
 add_executable(um6_driver src/main.cpp src/registers.cpp src/comms.cpp)
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(um6_driver
-  ${catkin_LIBRARIES}
-)
+target_link_libraries(um6_driver ${catkin_LIBRARIES} )
+add_dependencies(um6_driver um6_generate_messages_cpp)
 
 ##########
 ## Docs ##

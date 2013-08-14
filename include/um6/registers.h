@@ -161,19 +161,27 @@ class Registers {
       accel_ref(this, UM6_ACCEL_REF_X, 3),
       gyro_bias(this, UM6_GYRO_BIAS_XY, 3),
       accel_bias(this, UM6_ACCEL_BIAS_XY, 3),
-      mag_bias(this, UM6_MAG_BIAS_XY, 3) {
+      mag_bias(this, UM6_MAG_BIAS_XY, 3),
+      cmd_zero_gyros(this, UM6_ZERO_GYROS),
+      cmd_reset_ekf(this, UM6_RESET_EKF),
+      cmd_set_accel_ref(this, UM6_SET_ACCEL_REF),
+      cmd_set_mag_ref(this, UM6_SET_MAG_REF) {
       memset(raw_, 0, sizeof(raw_));
     }
 
     // Data
-    const Accessor<int16_t> gyro_raw, accel_raw, mag_raw;
-    const Accessor<int16_t> gyro, accel, mag, euler, quat;
+    const Accessor<int16_t> gyro_raw, accel_raw, mag_raw,
+                            gyro, accel, mag, euler, quat;
     const Accessor<float> covariance, temperature;
 
     // Configs
     const Accessor<uint32_t> communication, misc_config, status;
     const Accessor<float> mag_ref, accel_ref;
     const Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
+
+    // Commands
+    const Accessor<uint32_t> cmd_zero_gyros, cmd_reset_ekf, 
+                             cmd_set_accel_ref, cmd_set_mag_ref;
 
     void write_raw(uint8_t register_index, std::string data) {
       if ((register_index - 1) + (data.length()/4 - 1) >= NUM_REGISTERS) {
