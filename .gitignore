@@ -1,3 +1,5 @@
 *.swp
 bin
 build
+srv_gen
+src/um6
