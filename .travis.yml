@@ -1,15 +1,14 @@
 language: cpp
-compiler:
-  - gcc
-  - clang
-install:
+compiler: gcc
+before_install:
   - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
-  - sudo apt-get update
-  - sudo apt-get install ros-hydro-catkin ros-hydro-roscpp ros-hydro-serial ros-hydro-common-msgs ros-hydro-message-generation ros-hydro-message-runtime
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq ros-hydro-catkin ros-hydro-roscpp ros-hydro-serial ros-hydro-common-msgs
+install:
   - source /opt/ros/hydro/setup.bash
 script:
   - mkdir build
   - cd build
   - cmake ..
-  - make
+  - make all run_tests
