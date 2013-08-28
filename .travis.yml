@@ -1,6 +1,9 @@
 language: cpp
 compiler: gcc
+git:
+  depth: 0
 before_install:
+  - mkdir ~/build && pushd ~/build
   - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
@@ -9,7 +12,5 @@ before_install:
 install:
   - source /opt/ros/hydro/setup.bash
 script:
-  - mkdir build
-  - cd build
-  - cmake ..
+  - cmake `dirs +1`
   - make all run_tests um6_cpplint
