@@ -12,6 +12,8 @@ before_install:
 install:
   - mkdir -p ~/catkin_ws/src && pushd ~/catkin_ws
   - catkin_init_workspace src
-  - ln -s `dirs +1` src
+  - ln -s `dirs +1` src/
+  - ls -la src/
 script:
+  - catkin_make help
   - catkin_make all run_tests um6_cpplint
