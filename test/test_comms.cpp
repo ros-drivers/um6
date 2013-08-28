@@ -43,7 +43,7 @@ TEST_F(FakeSerial, basic_message_rx) {
   std::string msg(um6::Comms::message(UM6_MAG_RAW_XY, std::string("\x1\x2\x3\x4")));
   write_serial(msg);
 
-  um6::Comms sensor(ser);
+  um6::Comms sensor(&ser);
   um6::Registers registers;
   ASSERT_EQ(UM6_MAG_RAW_XY, sensor.receive(&registers)) << "Didn't return ID of arriving message.";
   EXPECT_EQ(0x0102, registers.mag_raw.get(0));
@@ -54,7 +54,7 @@ TEST_F(FakeSerial, batch_message_rx) {
   std::string msg(um6::Comms::message(UM6_ACCEL_RAW_XY, std::string("\x5\x6\x7\x8\x9\xa\0\0", 8)));
   write_serial(msg);
 
-  um6::Comms sensor(ser);
+  um6::Comms sensor(&ser);
   um6::Registers registers;
   ASSERT_EQ(UM6_ACCEL_RAW_XY, sensor.receive(&registers)) << "Didn't return ID of arriving message.";
   EXPECT_EQ(0x0506, registers.accel_raw.get(0));
@@ -68,7 +68,7 @@ TEST_F(FakeSerial, bad_checksum_message_rx) {
   msg[msg.length() - 1]++;
   write_serial(msg);
 
-  um6::Comms sensor(ser);
+  um6::Comms sensor(&ser);
   um6::Registers registers;
   EXPECT_EQ(-1, sensor.receive(&registers)) << "Didn't properly ignore bad checksum message.";
 }
@@ -79,14 +79,14 @@ TEST_F(FakeSerial, garbage_bytes_preceeding_message_rx) {
   msg = "ssssssnsnsns" + msg;
   write_serial(msg);
 
-  um6::Comms sensor(ser);
+  um6::Comms sensor(&ser);
   EXPECT_EQ(UM6_COMMUNICATION, sensor.receive(NULL)) << "Didn't handle garbage prepended to message.";
 }
 
 TEST_F(FakeSerial, timeout_message_rx) {
   std::string msg("snp\x12\x45");
   write_serial(msg);
-  um6::Comms sensor(ser);
+  um6::Comms sensor(&ser);
   EXPECT_EQ(-1, sensor.receive(NULL)) << "Didn't properly time out in the face of a partial message.";
 }
 

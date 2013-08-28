@@ -180,7 +180,7 @@ class Registers {
     const Accessor<int16_t> gyro_bias, accel_bias, mag_bias;
 
     // Commands
-    const Accessor<uint32_t> cmd_zero_gyros, cmd_reset_ekf, 
+    const Accessor<uint32_t> cmd_zero_gyros, cmd_reset_ekf,
                              cmd_set_accel_ref, cmd_set_mag_ref;
 
     void write_raw(uint8_t register_index, std::string data) {

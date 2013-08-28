@@ -5,10 +5,11 @@ before_install:
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
   - sudo apt-get install -qq ros-hydro-catkin ros-hydro-roscpp ros-hydro-serial ros-hydro-common-msgs
+  - pip install cpplint
 install:
   - source /opt/ros/hydro/setup.bash
 script:
   - mkdir build
   - cd build
   - cmake ..
-  - make all run_tests
+  - make all run_tests um6_cpplint

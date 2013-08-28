@@ -54,7 +54,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
   // Search the serial stream for a start-of-packet sequence.
   try {
     std::string snp;
-    serial_.readline(snp, 96, "snp");
+    serial_->readline(snp, 96, "snp");
     if (!boost::algorithm::ends_with(snp, "snp")) throw SerialTimeout();
 
     uint16_t checksum_calculated = 's' + 'n' + 'p';
@@ -63,8 +63,8 @@ int16_t Comms::receive(Registers* registers = NULL) {
     first_spin_ = false;
 
     uint8_t type, address;
-    if (serial_.read(&type, 1) != 1) throw SerialTimeout();
-    if (serial_.read(&address, 1) != 1) throw SerialTimeout();
+    if (serial_->read(&type, 1) != 1) throw SerialTimeout();
+    if (serial_->read(&address, 1) != 1) throw SerialTimeout();
     checksum_calculated += type + address;
     std::string data;
     if (type & PACKET_HAS_DATA) {
@@ -77,7 +77,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
       }
 
       // Read data bytes initially into a buffer so that we can compute the checksum.
-      if (serial_.read(data, data_length * 4) != data_length * 4) throw SerialTimeout();
+      if (serial_->read(data, data_length * 4) != data_length * 4) throw SerialTimeout();
       BOOST_FOREACH(uint8_t ch, data) {
         checksum_calculated += ch;
       }
@@ -87,7 +87,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
 
     // Compare computed checksum with transmitted value.
     uint16_t checksum_transmitted;
-    if (serial_.read(reinterpret_cast<uint8_t*>(&checksum_transmitted), 2) != 2) {
+    if (serial_->read(reinterpret_cast<uint8_t*>(&checksum_transmitted), 2) != 2) {
       throw SerialTimeout();
     }
     checksum_transmitted = ntohs(checksum_transmitted);
@@ -147,8 +147,8 @@ std::string Comms::message(uint8_t address, std::string data) {
 
 void Comms::send(const Accessor_& r) const {
   uint8_t address = r.index;
-  std::string data((char*)r.raw(), r.length * 4);
-  serial_.write(message(r.index, data));
+  std::string data(reinterpret_cast<char*>(r.raw()), r.length * 4);
+  serial_->write(message(r.index, data));
 }
 
 bool Comms::sendWaitAck(const Accessor_& r) {

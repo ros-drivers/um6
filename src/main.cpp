@@ -128,10 +128,10 @@ void configureSensor(um6::Comms* sensor) {
 
   // Optionally disable the gyro reset on startup. A user might choose to do this
   // if there's an external process which can ascertain when the vehicle is stationary
-  // and periodically call the /reset service, which exposes the 
+  // and periodically call the /reset service.
   bool zero_gyros;
   ros::param::param<bool>("~zero_gyros", zero_gyros, true);
-  if (zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes"); 
+  if (zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
 
   // Configurable vectors.
   configureVector3(sensor, r.mag_ref, "~mag_ref", "magnetic reference vector");
@@ -142,7 +142,7 @@ void configureSensor(um6::Comms* sensor) {
 }
 
 
-bool handleResetService(um6::Comms* sensor, 
+bool handleResetService(um6::Comms* sensor,
     const um6::Reset::Request& req, const um6::Reset::Response& resp) {
   um6::Registers r;
   if (req.zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
@@ -256,11 +256,11 @@ int main(int argc, char **argv) {
       ROS_INFO("Successfully connected to serial port.");
       first_failure = true;
       try {
-        um6::Comms sensor(ser);
+        um6::Comms sensor(&ser);
         configureSensor(&sensor);
         um6::Registers registers;
         ros::ServiceServer srv = n.advertiseService<um6::Reset::Request, um6::Reset::Response>(
-            "reset", boost::bind(handleResetService, &sensor, _1, _2)); 
+            "reset", boost::bind(handleResetService, &sensor, _1, _2));
 
         while (ros::ok()) {
           if (sensor.receive(&registers) == TRIGGER_PACKET) {

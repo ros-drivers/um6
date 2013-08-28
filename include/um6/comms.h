@@ -53,7 +53,7 @@ class Accessor_;
 
 class Comms {
   public:
-    explicit Comms(serial::Serial& s) : serial_(s), first_spin_(true) {
+    explicit Comms(serial::Serial* s) : serial_(s), first_spin_(true) {
     }
 
     /**
@@ -79,7 +79,7 @@ class Comms {
 
   private:
     bool first_spin_;
-    serial::Serial& serial_;
+    serial::Serial* serial_;
 };
 }
 
