@@ -3,14 +3,15 @@ compiler: gcc
 git:
   depth: 0
 before_install:
-  - mkdir ~/build/catkin_build && pushd ~/build/catkin_build
   - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
   - sudo apt-get install -qq ros-hydro-catkin ros-hydro-roscpp ros-hydro-serial ros-hydro-common-msgs
+  - source /opt/ros/hydro/setup.bash
   - sudo pip install cpplint
 install:
-  - source /opt/ros/hydro/setup.bash
+  - mkdir -p ~/catkin_ws/src && pushd ~/catkin_ws
+  - catkin_init_workspace src
+  - ln -s `dirs +1` src
 script:
-  - cmake `dirs +1`
-  - make all run_tests um6_cpplint
+  - catkin_make all run_tests um6_cpplint
