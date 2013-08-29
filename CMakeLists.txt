@@ -30,6 +30,14 @@ add_executable(um6_driver src/main.cpp src/registers.cpp src/comms.cpp)
 target_link_libraries(um6_driver ${catkin_LIBRARIES} )
 add_dependencies(um6_driver um6_generate_messages_cpp)
 
+#############
+## Install ##
+#############
+
+install(TARGETS um6_driver
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ##########
 ## Docs ##
 ##########
