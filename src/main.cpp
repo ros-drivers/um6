@@ -209,9 +209,9 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& 
   if (rpy_pub.getNumSubscribers() > 0) {
     geometry_msgs::Vector3Stamped rpy_msg;
     rpy_msg.header = header;
-    rpy_msg.vector.x = r.euler.get_scaled(0);
-    rpy_msg.vector.y = r.euler.get_scaled(1);
-    rpy_msg.vector.z = r.euler.get_scaled(2);
+    rpy_msg.vector.x = r.euler.get_scaled(1);
+    rpy_msg.vector.y = r.euler.get_scaled(0);
+    rpy_msg.vector.z = -r.euler.get_scaled(2);
     rpy_pub.publish(rpy_msg);
   }
 
