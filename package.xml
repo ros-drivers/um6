@@ -2,10 +2,13 @@
 <package>
   <name>um6</name>
   <version>0.0.1</version>
-  <description>The um6 package</description>
+  <description>The um6 package provides a C++ implementation of the CH Robotics serial protocol, and a
+    corresponding ROS node for publishing standard ROS orientation topics from a UM6.
+  </description>
 
   <maintainer email="mpurvis@clearpathrobotics.com">Mike Purvis</maintainer>
-
+  <author email="mpurvis@clearpathrobotics.com">Mike Purvis</author>
+  
   <license>BSD</license>
 
   <!-- <url type="website">http://ros.org/wiki/um6</url> -->
