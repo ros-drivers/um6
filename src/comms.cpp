@@ -53,19 +53,37 @@ const uint8_t Comms::PACKET_BATCH_LENGTH_OFFSET = 2;
 int16_t Comms::receive(Registers* registers = NULL) {
   // Search the serial stream for a start-of-packet sequence.
   try {
-    std::string snp;
-    serial_->readline(snp, 96, "snp");
-    if (!boost::algorithm::ends_with(snp, "snp")) throw SerialTimeout();
-
-    uint16_t checksum_calculated = 's' + 'n' + 'p';
-    ROS_WARN_COND(!first_spin_ && snp.length() > 3,
-        "Discarded %ld junk byte(s) preceeding packet.", snp.length() - 3);
-    first_spin_ = false;
+    size_t available = serial_->available();
+    if (available > 255) {
+      ROS_WARN_STREAM("Serial read buffer is " << available << ", now flushing in an attempt to catch up.");
+      serial_->flushInput(); 
+    }
+    
+    // Optimistically assume that the next five bytes on the wire are a packet header.
+    uint8_t header_bytes[5];
+    serial_->read(header_bytes, 5);
 
     uint8_t type, address;
-    if (serial_->read(&type, 1) != 1) throw SerialTimeout();
-    if (serial_->read(&address, 1) != 1) throw SerialTimeout();
-    checksum_calculated += type + address;
+    if (memcmp(header_bytes, "snp", 3) == 0) {
+      // Optimism win.
+      type = header_bytes[3];
+      address = header_bytes[4];
+    } else {
+      // Optimism fail. Search the serial stream for a header.
+      std::string snp;
+      serial_->readline(snp, 96, "snp");
+      if (!boost::algorithm::ends_with(snp, "snp")) throw SerialTimeout();
+      if (snp.length() > 3) {
+        ROS_WARN_STREAM_COND(!first_spin_,
+          "Discarded " << 5 + snp.length() - 3 << " junk byte(s) preceeding packet.");
+      }
+      if (serial_->read(&type, 1) != 1) throw SerialTimeout();
+      if (serial_->read(&address, 1) != 1) throw SerialTimeout();
+    }
+ 
+    first_spin_ = false;
+
+    uint16_t checksum_calculated = 's' + 'n' + 'p' + type + address;
     std::string data;
     if (type & PACKET_HAS_DATA) {
       uint8_t data_length = 1;
