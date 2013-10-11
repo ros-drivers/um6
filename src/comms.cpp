@@ -56,9 +56,9 @@ int16_t Comms::receive(Registers* registers = NULL) {
     size_t available = serial_->available();
     if (available > 255) {
       ROS_WARN_STREAM("Serial read buffer is " << available << ", now flushing in an attempt to catch up.");
-      serial_->flushInput(); 
+      serial_->flushInput();
     }
-    
+
     // Optimistically assume that the next five bytes on the wire are a packet header.
     uint8_t header_bytes[5];
     serial_->read(header_bytes, 5);
@@ -80,7 +80,7 @@ int16_t Comms::receive(Registers* registers = NULL) {
       if (serial_->read(&type, 1) != 1) throw SerialTimeout();
       if (serial_->read(&address, 1) != 1) throw SerialTimeout();
     }
- 
+
     first_spin_ = false;
 
     uint16_t checksum_calculated = 's' + 'n' + 'p' + type + address;
