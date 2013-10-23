@@ -137,7 +137,7 @@ std::string Comms::checksum(const std::string& s) {
     checksum += ch;
   }
   checksum = htons(checksum);
-  ROS_DEBUG("Computed checksum on string of length %ld as %04x.", s.length(), checksum);
+  ROS_DEBUG("Computed checksum on string of length %zd as %04x.", s.length(), checksum);
   std::string out(2, 0);
   memcpy(&out[0], &checksum, 2);
   return out;
@@ -159,7 +159,7 @@ std::string Comms::message(uint8_t address, std::string data) {
   std::string c = checksum(output);
   ss << c;
   output = ss.str();
-  ROS_DEBUG("Generated message %02x of overall length %ld.", address, output.length());
+  ROS_DEBUG("Generated message %02x of overall length %zd.", address, output.length());
   return output;
 }
 
