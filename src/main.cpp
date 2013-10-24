@@ -238,7 +238,6 @@ int main(int argc, char **argv) {
   serial::Serial ser;
   ser.setPort(port);
   ser.setBaudrate(baud);
-  //serial::Timeout to = serial::Timeout::simpleTimeout(100);
   serial::Timeout to = serial::Timeout(50, 50, 0, 50, 0);
   ser.setTimeout(to);
 
