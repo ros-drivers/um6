@@ -2,8 +2,8 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2013-10-24)
+------------------
 * Specify non-max inter-byte timeout to avoid 32-bit problems in serial.
 * Switch to %zd for logging size_t values.
 * Be more optimistic about finding packets back-to-back, rather than expecting inter-packet junk bytes.
