@@ -33,8 +33,8 @@
  *
  */
 
-#ifndef INCLUDE_UM6_REGISTERS_H_
-#define INCLUDE_UM6_REGISTERS_H_
+#ifndef UM6_REGISTERS_H
+#define UM6_REGISTERS_H
 
 #include <endian.h>
 #include <math.h>
@@ -208,6 +208,6 @@ private:
 
   friend class Accessor_;
 };
-}
+}  // namespace um6
 
-#endif  // INCLUDE_UM6_REGISTERS_H_
+#endif  // UM6_REGISTERS_H

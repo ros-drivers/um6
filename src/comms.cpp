@@ -132,7 +132,7 @@ int16_t Comms::receive(Registers* registers = NULL)
 
     // Copy data from checksum buffer into registers, if specified.
     // Note that byte-order correction (as necessary) happens at access-time.
-    if ((data.length() > 0) and registers)
+    if ((data.length() > 0) && registers)
     {
       registers->write_raw(address, data);
     }
@@ -219,4 +219,4 @@ bool Comms::sendWaitAck(const Accessor_& r)
   }
   return false;
 }
-}  // um6
+}  // namespace um6

@@ -32,8 +32,8 @@
  *
  */
 
-#ifndef INCLUDE_UM6_COMMS_H_
-#define INCLUDE_UM6_COMMS_H_
+#ifndef UM6_COMMS_H
+#define UM6_COMMS_H
 
 #include <stdint.h>
 #include <string>
@@ -85,7 +85,7 @@ private:
   bool first_spin_;
   serial::Serial* serial_;
 };
-}
+}  // namespace um6
 
-#endif  // INCLUDE_UM6_COMMS_H_
+#endif  // UM6_COMMS_H
 
