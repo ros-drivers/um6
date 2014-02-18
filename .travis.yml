@@ -15,4 +15,4 @@ install:
   - catkin_init_workspace src
   - ln -s `eval echo $(dirs +1)` src/
 script:
-  - catkin_make all run_tests um6_cpplint
+  - catkin_make all run_tests roslint
