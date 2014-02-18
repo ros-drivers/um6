@@ -48,7 +48,8 @@ if(TARGET ${PROJECT_NAME}_test_comms)
   target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
 endif()
 
-file(GLOB ${PROJECT_NAME}_LINT_SRCS src/*.cpp include/um6/*.h)
-file(GLOB ${PROJECT_NAME}_NOLINT_SRCS include/um6/firmware_registers.h)
-list(REMOVE_ITEM ${PROJECT_NAME}_LINT_SRCS ${${PROJECT_NAME}_NOLINT_SRCS})
-roslint_cpp(${${PROJECT_NAME}_LINT_SRCS})
+file(GLOB LINT_SRCS
+  src/*.cpp
+  include/um6/registers.h
+  include/um6/comms.h)
+roslint_cpp(${LINT_SRCS})
