@@ -36,7 +36,12 @@
 #ifndef UM6_REGISTERS_H
 #define UM6_REGISTERS_H
 
+#if __APPLE__
+#include <machine/endian.h>
+#else
 #include <endian.h>
+#endif
+
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
