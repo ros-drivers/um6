@@ -53,3 +53,4 @@ file(GLOB LINT_SRCS
   include/um6/registers.h
   include/um6/comms.h)
 roslint_cpp(${LINT_SRCS})
+roslint_add_test()
