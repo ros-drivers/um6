@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>um6</name>
-  <version>0.0.2</version>
+  <version>1.0.0</version>
   <description>The um6 package provides a C++ implementation of the CH Robotics serial protocol, and a
     corresponding ROS node for publishing standard ROS orientation topics from a UM6.
   </description>

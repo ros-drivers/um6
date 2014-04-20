@@ -2,6 +2,13 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2014-04-20)
+------------------
+* Add roslint.
+* Use astyle to fix braces and spacing.
+* #if guard for <endian.h> include on OS X.
+* Contributors: Mike Purvis
+
 0.0.2 (2013-10-24)
 ------------------
 * Specify non-max inter-byte timeout to avoid 32-bit problems in serial.
