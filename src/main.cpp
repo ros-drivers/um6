@@ -174,10 +174,10 @@ bool handleResetService(um6::Comms* sensor,
  */
 void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& header)
 {
-  static ros::Publisher imu_pub = n->advertise<sensor_msgs::Imu>("imu/data", 1, false);
-  static ros::Publisher mag_pub = n->advertise<geometry_msgs::Vector3Stamped>("imu/mag", 1, false);
-  static ros::Publisher rpy_pub = n->advertise<geometry_msgs::Vector3Stamped>("imu/rpy", 1, false);
-  static ros::Publisher temp_pub = n->advertise<std_msgs::Float32>("imu/temperature", 1, false);
+  static ros::Publisher imu_pub = n->advertise<sensor_msgs::Imu>("data", 1, false);
+  static ros::Publisher mag_pub = n->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
+  static ros::Publisher rpy_pub = n->advertise<geometry_msgs::Vector3Stamped>("rpy", 1, false);
+  static ros::Publisher temp_pub = n->advertise<std_msgs::Float32>("temperature", 1, false);
 
   if (imu_pub.getNumSubscribers() > 0)
   {
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
   serial::Timeout to = serial::Timeout(50, 50, 0, 50, 0);
   ser.setTimeout(to);
 
-  ros::NodeHandle n;
+  ros::NodeHandle n("imu");
   std_msgs::Header header;
   ros::param::param<std::string>("~frame_id", header.frame_id, "imu_link");
 
