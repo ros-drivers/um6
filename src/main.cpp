@@ -98,7 +98,7 @@ void sendCommand(um6::Comms* sensor, const um6::Accessor<RegT>& reg, std::string
  * Send configuration messages to the UM6, critically, to turn on the value outputs
  * which we require, and inject necessary configuration parameters.
  */
-void configureSensor(um6::Comms* sensor)
+void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
 {
   um6::Registers r;
 
@@ -116,8 +116,8 @@ void configureSensor(um6::Comms* sensor)
 
   // Optionally disable mag and accel updates in the sensor's EKF.
   bool mag_updates, accel_updates;
-  ros::param::param<bool>("~mag_updates", mag_updates, true);
-  ros::param::param<bool>("~accel_updates", accel_updates, true);
+  private_nh->param<bool>("mag_updates", mag_updates, true);
+  private_nh->param<bool>("accel_updates", accel_updates, true);
   uint32_t misc_config_reg = UM6_QUAT_ESTIMATE_ENABLED;
   if (mag_updates)
   {
@@ -145,7 +145,7 @@ void configureSensor(um6::Comms* sensor)
   // if there's an external process which can ascertain when the vehicle is stationary
   // and periodically call the /reset service.
   bool zero_gyros;
-  ros::param::param<bool>("~zero_gyros", zero_gyros, true);
+  private_nh->param<bool>("zero_gyros", zero_gyros, true);
   if (zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
 
   // Configurable vectors.
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
       try
       {
         um6::Comms sensor(&ser);
-        configureSensor(&sensor);
+        configureSensor(&sensor, &private_nh);
         um6::Registers registers;
         ros::ServiceServer srv = imu_nh.advertiseService<um6::Reset::Request, um6::Reset::Response>(
                                    "reset", boost::bind(handleResetService, &sensor, _1, _2));
