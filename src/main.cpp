@@ -172,18 +172,15 @@ bool handleResetService(um6::Comms* sensor,
  * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& header)
+void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg)
 {
-  static ros::Publisher imu_pub = n->advertise<sensor_msgs::Imu>("data", 1, false);
-  static ros::Publisher mag_pub = n->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
-  static ros::Publisher rpy_pub = n->advertise<geometry_msgs::Vector3Stamped>("rpy", 1, false);
-  static ros::Publisher temp_pub = n->advertise<std_msgs::Float32>("temperature", 1, false);
+  static ros::Publisher imu_pub = imu_nh->advertise<sensor_msgs::Imu>("data", 1, false);
+  static ros::Publisher mag_pub = imu_nh->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
+  static ros::Publisher rpy_pub = imu_nh->advertise<geometry_msgs::Vector3Stamped>("rpy", 1, false);
+  static ros::Publisher temp_pub = imu_nh->advertise<std_msgs::Float32>("temperature", 1, false);
 
   if (imu_pub.getNumSubscribers() > 0)
   {
-    sensor_msgs::Imu imu_msg;
-    imu_msg.header = header;
-
     // IMU outputs [w,x,y,z] NED, convert to [x,y,z,w] ENU
     imu_msg.orientation.x = r.quat.get_scaled(2);
     imu_msg.orientation.y = r.quat.get_scaled(1);
@@ -218,7 +215,7 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& 
   if (mag_pub.getNumSubscribers() > 0)
   {
     geometry_msgs::Vector3Stamped mag_msg;
-    mag_msg.header = header;
+    mag_msg.header = imu_msg.header;
     mag_msg.vector.x = r.mag.get_scaled(1);
     mag_msg.vector.y = r.mag.get_scaled(0);
     mag_msg.vector.z = -r.mag.get_scaled(2);
@@ -228,7 +225,7 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* n, const std_msgs::Header& 
   if (rpy_pub.getNumSubscribers() > 0)
   {
     geometry_msgs::Vector3Stamped rpy_msg;
-    rpy_msg.header = header;
+    rpy_msg.header = imu_msg.header;
     rpy_msg.vector.x = r.euler.get_scaled(1);
     rpy_msg.vector.y = r.euler.get_scaled(0);
     rpy_msg.vector.z = -r.euler.get_scaled(2);
@@ -265,9 +262,22 @@ int main(int argc, char **argv)
   serial::Timeout to = serial::Timeout(50, 50, 0, 50, 0);
   ser.setTimeout(to);
 
+  sensor_msgs::Imu imu_msg;
+  double linear_acceleration_stdev, angular_velocity_stdev;
+  private_nh.param<std::string>("frame_id", imu_msg.header.frame_id, "imu_link");
+  private_nh.param<double>("linear_acceleration_stdev", linear_acceleration_stdev, 0.098);
+  private_nh.param<double>("angular_velocity_stdev", angular_velocity_stdev, 0.012);
 
-  std_msgs::Header header;
-  private_nh.param<std::string>("frame_id", header.frame_id, "imu_link");
+  double linear_acceleration_cov = linear_acceleration_stdev * linear_acceleration_stdev;
+  double angular_velocity_cov = angular_velocity_stdev * angular_velocity_stdev;
+
+  imu_msg.linear_acceleration_covariance[0] = linear_acceleration_cov;
+  imu_msg.linear_acceleration_covariance[4] = linear_acceleration_cov;
+  imu_msg.linear_acceleration_covariance[8] = linear_acceleration_cov;
+
+  imu_msg.angular_velocity_covariance[0] = angular_velocity_cov;
+  imu_msg.angular_velocity_covariance[4] = angular_velocity_cov;
+  imu_msg.angular_velocity_covariance[8] = angular_velocity_cov;
 
   bool first_failure = true;
   while (ros::ok())
@@ -297,8 +307,8 @@ int main(int argc, char **argv)
           if (sensor.receive(&registers) == TRIGGER_PACKET)
           {
             // Triggered by arrival of final message in group.
-            header.stamp = ros::Time::now();
-            publishMsgs(registers, &imu_nh, header);
+            imu_msg.header.stamp = ros::Time::now();
+            publishMsgs(registers, &imu_nh, imu_msg);
             ros::spinOnce();
           }
         }
