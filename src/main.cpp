@@ -254,8 +254,10 @@ int main(int argc, char **argv)
   // Load parameters from private node handle.
   std::string port;
   int32_t baud;
-  ros::param::param<std::string>("~port", port, "/dev/ttyUSB0");
-  ros::param::param<int32_t>("~baud", baud, 115200);
+
+  ros::NodeHandle imu_nh("imu"), private_nh("~");
+  private_nh.param<std::string>("port", port, "/dev/ttyUSB0");
+  private_nh.param<int32_t>("baud", baud, 115200);
 
   serial::Serial ser;
   ser.setPort(port);
@@ -263,9 +265,9 @@ int main(int argc, char **argv)
   serial::Timeout to = serial::Timeout(50, 50, 0, 50, 0);
   ser.setTimeout(to);
 
-  ros::NodeHandle n("imu");
+
   std_msgs::Header header;
-  ros::param::param<std::string>("~frame_id", header.frame_id, "imu_link");
+  private_nh.param<std::string>("frame_id", header.frame_id, "imu_link");
 
   bool first_failure = true;
   while (ros::ok())
@@ -287,7 +289,7 @@ int main(int argc, char **argv)
         um6::Comms sensor(&ser);
         configureSensor(&sensor);
         um6::Registers registers;
-        ros::ServiceServer srv = n.advertiseService<um6::Reset::Request, um6::Reset::Response>(
+        ros::ServiceServer srv = imu_nh.advertiseService<um6::Reset::Request, um6::Reset::Response>(
                                    "reset", boost::bind(handleResetService, &sensor, _1, _2));
 
         while (ros::ok())
@@ -296,7 +298,7 @@ int main(int argc, char **argv)
           {
             // Triggered by arrival of final message in group.
             header.stamp = ros::Time::now();
-            publishMsgs(registers, &n, header);
+            publishMsgs(registers, &imu_nh, header);
             ros::spinOnce();
           }
         }
