@@ -264,8 +264,9 @@ int main(int argc, char **argv)
   sensor_msgs::Imu imu_msg;
   double linear_acceleration_stdev, angular_velocity_stdev;
   private_nh.param<std::string>("frame_id", imu_msg.header.frame_id, "imu_link");
-  private_nh.param<double>("linear_acceleration_stdev", linear_acceleration_stdev, 0.098);
-  private_nh.param<double>("angular_velocity_stdev", angular_velocity_stdev, 0.012);
+  // Defaults obtained experimentally from hardware, no device spec exists
+  private_nh.param<double>("linear_acceleration_stdev", linear_acceleration_stdev, 0.06);
+  private_nh.param<double>("angular_velocity_stdev", angular_velocity_stdev, 0.005);
 
   double linear_acceleration_cov = linear_acceleration_stdev * linear_acceleration_stdev;
   double angular_velocity_cov = angular_velocity_stdev * angular_velocity_stdev;
