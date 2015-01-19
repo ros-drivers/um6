@@ -169,6 +169,21 @@ bool handleResetService(um6::Comms* sensor,
 }
 
 /**
+* Normalize acceleration vector in imu message to standard gravity
+*/
+void normalizeAccel(sensor_msgs::Imu& imu_msg){
+
+  double norm = 9.807 / std::sqrt(imu_msg.linear_acceleration.x * imu_msg.linear_acceleration.x
+      + imu_msg.linear_acceleration.y * imu_msg.linear_acceleration.y
+      + imu_msg.linear_acceleration.z * imu_msg.linear_acceleration.z);
+
+  imu_msg.linear_acceleration.x *= norm;
+  imu_msg.linear_acceleration.y *= norm;
+  imu_msg.linear_acceleration.z *= norm;
+
+}
+
+/**
  * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
@@ -209,6 +224,8 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
     imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
 
+    normalizeAccel(imu_msg);
+
     imu_pub.publish(imu_msg);
   }
 
@@ -239,7 +256,6 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     temp_pub.publish(temp_msg);
   }
 }
-
 
 /**
  * Node entry-point. Handles ROS setup, and serial port connection/reconnection.
