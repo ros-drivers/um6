@@ -1,37 +1,37 @@
 /**
-*
-*  \file
-*  \brief      Main entry point for UM6 driver. Handles serial connection
-*              details, as well as all ROS message stuffing, parameters,
-*              topics, etc.
-*  \author     Mike Purvis <mpurvis@clearpathrobotics.com>
-*  \copyright  Copyright (c) 2013, Clearpath Robotics, Inc.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*     * Redistributions of source code must retain the above copyright
-*       notice, this list of conditions and the following disclaimer.
-*     * Redistributions in binary form must reproduce the above copyright
-*       notice, this list of conditions and the following disclaimer in the
-*       documentation and/or other materials provided with the distribution.
-*     * Neither the name of Clearpath Robotics, Inc. nor the
-*       names of its contributors may be used to endorse or promote products
-*       derived from this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-* WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL CLEARPATH ROBOTICS, INC. BE LIABLE FOR ANY
-* DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-* (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-* LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-* ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*
-* Please send comments, questions, or patches to code@clearpathrobotics.com
-*
-*/
+ *
+ *  \file
+ *  \brief      Main entry point for UM6 driver. Handles serial connection
+ *              details, as well as all ROS message stuffing, parameters,
+ *              topics, etc.
+ *  \author     Mike Purvis <mpurvis@clearpathrobotics.com>
+ *  \copyright  Copyright (c) 2013, Clearpath Robotics, Inc.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of Clearpath Robotics, Inc. nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL CLEARPATH ROBOTICS, INC. BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Please send comments, questions, or patches to code@clearpathrobotics.com
+ *
+ */
 #include <string>
 
 #include "geometry_msgs/Vector3Stamped.h"
@@ -49,12 +49,12 @@
 const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
 
 /**
-* Function generalizes the process of writing an XYZ vector into consecutive
-* fields in UM6 registers.
-*/
+ * Function generalizes the process of writing an XYZ vector into consecutive
+ * fields in UM6 registers.
+ */
 template<typename RegT>
 void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
-    std::string param, std::string human_name)
+                      std::string param, std::string human_name)
 {
   if (reg.length != 3)
   {
@@ -68,7 +68,7 @@ void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
     ros::param::get(param + "/y", y);
     ros::param::get(param + "/z", z);
     ROS_INFO_STREAM("Configuring " << human_name << " to ("
-        << x << ", " << y << ", " << z << ")");
+                    << x << ", " << y << ", " << z << ")");
     reg.set_scaled(0, x);
     reg.set_scaled(1, y);
     reg.set_scaled(2, z);
@@ -80,9 +80,9 @@ void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
 }
 
 /**
-* Function generalizes the process of commanding the UM6 via one of its command
-* registers.
-*/
+ * Function generalizes the process of commanding the UM6 via one of its command
+ * registers.
+ */
 template<typename RegT>
 void sendCommand(um6::Comms* sensor, const um6::Accessor<RegT>& reg, std::string human_name)
 {
@@ -95,9 +95,9 @@ void sendCommand(um6::Comms* sensor, const um6::Accessor<RegT>& reg, std::string
 
 
 /**
-* Send configuration messages to the UM6, critically, to turn on the value outputs
-* which we require, and inject necessary configuration parameters.
-*/
+ * Send configuration messages to the UM6, critically, to turn on the value outputs
+ * which we require, and inject necessary configuration parameters.
+ */
 void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
 {
   um6::Registers r;
@@ -105,9 +105,9 @@ void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
   // Enable outputs we need.
   const uint8_t UM6_BAUD_115200 = 0x5;
   uint32_t comm_reg = UM6_BROADCAST_ENABLED |
-      UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED |
-      UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED |
-      UM6_BAUD_115200 << UM6_BAUD_START_BIT;
+                      UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED |
+                      UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED |
+                      UM6_BAUD_115200 << UM6_BAUD_START_BIT;
   r.communication.set(0, comm_reg);
   if (!sensor->sendWaitAck(r.communication))
   {
@@ -158,7 +158,7 @@ void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
 
 
 bool handleResetService(um6::Comms* sensor,
-    const um6::Reset::Request& req, const um6::Reset::Response& resp)
+                        const um6::Reset::Request& req, const um6::Reset::Response& resp)
 {
   um6::Registers r;
   if (req.zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
@@ -169,9 +169,9 @@ bool handleResetService(um6::Comms* sensor,
 }
 
 /**
-* Uses the register accessors to grab data from the IMU, and populate
-* the ROS messages which are output.
-*/
+ * Uses the register accessors to grab data from the IMU, and populate
+ * the ROS messages which are output.
+ */
 void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg, bool tf_ned_to_enu)
 {
   static ros::Publisher imu_pub = imu_nh->advertise<sensor_msgs::Imu>("data", 1, false);
@@ -253,8 +253,8 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 }
 
 /**
-* Node entry-point. Handles ROS setup, and serial port connection/reconnection.
-*/
+ * Node entry-point. Handles ROS setup, and serial port connection/reconnection.
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "um6_driver");
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
         configureSensor(&sensor, &private_nh);
         um6::Registers registers;
         ros::ServiceServer srv = imu_nh.advertiseService<um6::Reset::Request, um6::Reset::Response>(
-            "reset", boost::bind(handleResetService, &sensor, _1, _2));
+                                   "reset", boost::bind(handleResetService, &sensor, _1, _2));
 
         while (ros::ok())
         {
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
     else
     {
       ROS_WARN_STREAM_COND(first_failure, "Could not connect to serial device "
-          << port << ". Trying again every 1 second.");
+                           << port << ". Trying again every 1 second.");
       first_failure = false;
       ros::Duration(1.0).sleep();
     }
