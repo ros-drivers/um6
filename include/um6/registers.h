@@ -163,7 +163,7 @@ public:
     accel_raw(this, UM6_ACCEL_RAW_XY, 3),
     mag_raw(this, UM6_MAG_RAW_XY, 3),
     gyro(this, UM6_GYRO_PROC_XY, 3, 0.0610352 * TO_RADIANS),
-    accel(this, UM6_ACCEL_PROC_XY, 3, 0.000183105),
+    accel(this, UM6_ACCEL_PROC_XY, 3, 0.00179639),
     mag(this, UM6_MAG_PROC_XY, 3, 0.000305176),
     euler(this, UM6_EULER_PHI_THETA, 3, 0.0109863 * TO_RADIANS),
     quat(this, UM6_QUAT_AB, 4, 0.0000335693),
