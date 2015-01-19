@@ -53,7 +53,7 @@ const uint8_t TRIGGER_PACKET = UM6_TEMPERATURE;
 * fields in UM6 registers.
 */
 template<typename RegT>
-void configureVector3(um6::Comms *sensor, const um6::Accessor <RegT> &reg,
+void configureVector3(um6::Comms* sensor, const um6::Accessor<RegT>& reg,
     std::string param, std::string human_name)
 {
   if (reg.length != 3)
@@ -84,7 +84,7 @@ void configureVector3(um6::Comms *sensor, const um6::Accessor <RegT> &reg,
 * registers.
 */
 template<typename RegT>
-void sendCommand(um6::Comms *sensor, const um6::Accessor <RegT> &reg, std::string human_name)
+void sendCommand(um6::Comms* sensor, const um6::Accessor<RegT>& reg, std::string human_name)
 {
   ROS_INFO_STREAM("Sending command: " << human_name);
   if (!sensor->sendWaitAck(reg))
@@ -98,7 +98,7 @@ void sendCommand(um6::Comms *sensor, const um6::Accessor <RegT> &reg, std::strin
 * Send configuration messages to the UM6, critically, to turn on the value outputs
 * which we require, and inject necessary configuration parameters.
 */
-void configureSensor(um6::Comms * sensor, ros::NodeHandle * private_nh)
+void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
 {
   um6::Registers r;
 
@@ -146,7 +146,7 @@ void configureSensor(um6::Comms * sensor, ros::NodeHandle * private_nh)
   // and periodically call the /reset service.
   bool zero_gyros;
   private_nh->param<bool>("zero_gyros", zero_gyros, true);
-  if (zero_gyros) { sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes"); }
+  if (zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
 
   // Configurable vectors.
   configureVector3(sensor, r.mag_ref, "~mag_ref", "magnetic reference vector");
@@ -157,14 +157,14 @@ void configureSensor(um6::Comms * sensor, ros::NodeHandle * private_nh)
 }
 
 
-bool handleResetService(um6::Comms *sensor,
-    const um6::Reset::Request &req, const um6::Reset::Response &resp)
+bool handleResetService(um6::Comms* sensor,
+    const um6::Reset::Request& req, const um6::Reset::Response& resp)
 {
   um6::Registers r;
-  if (req.zero_gyros) { sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes"); }
-  if (req.reset_ekf) { sendCommand(sensor, r.cmd_reset_ekf, "reset EKF"); }
-  if (req.set_mag_ref) { sendCommand(sensor, r.cmd_set_mag_ref, "set magnetometer reference"); }
-  if (req.set_accel_ref) { sendCommand(sensor, r.cmd_set_accel_ref, "set accelerometer reference"); }
+  if (req.zero_gyros) sendCommand(sensor, r.cmd_zero_gyros, "zero gyroscopes");
+  if (req.reset_ekf) sendCommand(sensor, r.cmd_reset_ekf, "reset EKF");
+  if (req.set_mag_ref) sendCommand(sensor, r.cmd_set_mag_ref, "set magnetometer reference");
+  if (req.set_accel_ref) sendCommand(sensor, r.cmd_set_accel_ref, "set accelerometer reference");
   return true;
 }
 
@@ -172,7 +172,7 @@ bool handleResetService(um6::Comms *sensor,
 * Uses the register accessors to grab data from the IMU, and populate
 * the ROS messages which are output.
 */
-void publishMsgs(um6::Registers &r, ros::NodeHandle *imu_nh, sensor_msgs::Imu &imu_msg, bool tf_ned_to_enu)
+void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg, bool tf_ned_to_enu)
 {
   static ros::Publisher imu_pub = imu_nh->advertise<sensor_msgs::Imu>("data", 1, false);
   static ros::Publisher mag_pub = imu_nh->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
@@ -219,9 +219,8 @@ void publishMsgs(um6::Registers &r, ros::NodeHandle *imu_nh, sensor_msgs::Imu &i
       imu_msg.linear_acceleration.x = r.accel.get_scaled(0);
       imu_msg.linear_acceleration.y = r.accel.get_scaled(1);
       imu_msg.linear_acceleration.z = r.accel.get_scaled(2);
-
     }
-    
+
     imu_pub.publish(imu_msg);
   }
 
@@ -302,7 +301,7 @@ int main(int argc, char **argv)
     {
       ser.open();
     }
-    catch (const serial::IOException &e)
+    catch(const serial::IOException& e)
     {
       ROS_DEBUG("Unable to connect to port.");
     }
@@ -329,9 +328,9 @@ int main(int argc, char **argv)
           }
         }
       }
-      catch (const std::exception &e)
+      catch(const std::exception& e)
       {
-        if (ser.isOpen()) { ser.close(); }
+        if (ser.isOpen()) ser.close();
         ROS_ERROR_STREAM(e.what());
         ROS_INFO("Attempting reconnection after error.");
         ros::Duration(1.0).sleep();
