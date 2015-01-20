@@ -181,7 +181,6 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
   if (imu_pub.getNumSubscribers() > 0)
   {
-
     // IMU reports a 4x4 wxyz covariance, ROS requires only 3x3 xyz.
     // NED -> ENU conversion req'd?
     imu_msg.orientation_covariance[0] = r.covariance.get_scaled(5);
