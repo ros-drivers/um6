@@ -181,11 +181,6 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
   if (imu_pub.getNumSubscribers() > 0)
   {
-    // IMU outputs [w,x,y,z] NED, convert to [x,y,z,w] ENU
-    imu_msg.orientation.x = r.quat.get_scaled(2);
-    imu_msg.orientation.y = r.quat.get_scaled(1);
-    imu_msg.orientation.z = -r.quat.get_scaled(3);
-    imu_msg.orientation.w = r.quat.get_scaled(0);
 
     // IMU reports a 4x4 wxyz covariance, ROS requires only 3x3 xyz.
     // NED -> ENU conversion req'd?
@@ -199,9 +194,14 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     imu_msg.orientation_covariance[7] = r.covariance.get_scaled(14);
     imu_msg.orientation_covariance[8] = r.covariance.get_scaled(15);
 
-    // NED -> ENU conversion.
+    // NED -> ENU conversion (x = y, y = x, z = -z)
     if (tf_ned_to_enu)
     {
+      imu_msg.orientation.x = r.quat.get_scaled(2);
+      imu_msg.orientation.y = r.quat.get_scaled(1);
+      imu_msg.orientation.z = -r.quat.get_scaled(3);
+      imu_msg.orientation.w = r.quat.get_scaled(0);
+
       imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
       imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
       imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
@@ -212,6 +212,11 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     }
     else
     {
+      imu_msg.orientation.w = r.quat.get_scaled(0);
+      imu_msg.orientation.x = r.quat.get_scaled(1);
+      imu_msg.orientation.y = r.quat.get_scaled(2);
+      imu_msg.orientation.z = r.quat.get_scaled(3);
+
       imu_msg.angular_velocity.x = r.gyro.get_scaled(0);
       imu_msg.angular_velocity.y = r.gyro.get_scaled(1);
       imu_msg.angular_velocity.z = r.gyro.get_scaled(2);
