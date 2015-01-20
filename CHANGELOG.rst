@@ -2,8 +2,8 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.0 (2015-01-20)
+------------------
 * Parametrize NED->ENU conversion
 * Covariance and accel vector fixes
 * Added reasonable defaults for std dev
