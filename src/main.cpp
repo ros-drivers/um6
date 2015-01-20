@@ -172,7 +172,7 @@ bool handleResetService(um6::Comms* sensor,
  * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg)
+void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg, bool tf_ned_to_enu)
 {
   static ros::Publisher imu_pub = imu_nh->advertise<sensor_msgs::Imu>("data", 1, false);
   static ros::Publisher mag_pub = imu_nh->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
@@ -181,12 +181,6 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
   if (imu_pub.getNumSubscribers() > 0)
   {
-    // IMU outputs [w,x,y,z] NED, convert to [x,y,z,w] ENU
-    imu_msg.orientation.x = r.quat.get_scaled(2);
-    imu_msg.orientation.y = r.quat.get_scaled(1);
-    imu_msg.orientation.z = -r.quat.get_scaled(3);
-    imu_msg.orientation.w = r.quat.get_scaled(0);
-
     // IMU reports a 4x4 wxyz covariance, ROS requires only 3x3 xyz.
     // NED -> ENU conversion req'd?
     imu_msg.orientation_covariance[0] = r.covariance.get_scaled(5);
@@ -199,15 +193,37 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     imu_msg.orientation_covariance[7] = r.covariance.get_scaled(14);
     imu_msg.orientation_covariance[8] = r.covariance.get_scaled(15);
 
-    // NED -> ENU conversion.
-    imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
-    imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
-    imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
+    // NED -> ENU conversion (x = y, y = x, z = -z)
+    if (tf_ned_to_enu)
+    {
+      imu_msg.orientation.x = r.quat.get_scaled(2);
+      imu_msg.orientation.y = r.quat.get_scaled(1);
+      imu_msg.orientation.z = -r.quat.get_scaled(3);
+      imu_msg.orientation.w = r.quat.get_scaled(0);
 
-    // NED -> ENU conversion.
-    imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
-    imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
-    imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
+      imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
+      imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
+      imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
+
+      imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
+      imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
+      imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
+    }
+    else
+    {
+      imu_msg.orientation.w = r.quat.get_scaled(0);
+      imu_msg.orientation.x = r.quat.get_scaled(1);
+      imu_msg.orientation.y = r.quat.get_scaled(2);
+      imu_msg.orientation.z = r.quat.get_scaled(3);
+
+      imu_msg.angular_velocity.x = r.gyro.get_scaled(0);
+      imu_msg.angular_velocity.y = r.gyro.get_scaled(1);
+      imu_msg.angular_velocity.z = r.gyro.get_scaled(2);
+
+      imu_msg.linear_acceleration.x = r.accel.get_scaled(0);
+      imu_msg.linear_acceleration.y = r.accel.get_scaled(1);
+      imu_msg.linear_acceleration.z = r.accel.get_scaled(2);
+    }
 
     imu_pub.publish(imu_msg);
   }
@@ -271,6 +287,9 @@ int main(int argc, char **argv)
   double linear_acceleration_cov = linear_acceleration_stdev * linear_acceleration_stdev;
   double angular_velocity_cov = angular_velocity_stdev * angular_velocity_stdev;
 
+  bool tf_ned_to_enu;
+  private_nh.param<bool>("tf_ned_to_enu", tf_ned_to_enu, true);
+
   imu_msg.linear_acceleration_covariance[0] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[4] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[8] = linear_acceleration_cov;
@@ -308,7 +327,7 @@ int main(int argc, char **argv)
           {
             // Triggered by arrival of final message in group.
             imu_msg.header.stamp = ros::Time::now();
-            publishMsgs(registers, &imu_nh, imu_msg);
+            publishMsgs(registers, &imu_nh, imu_msg, tf_ned_to_enu);
             ros::spinOnce();
           }
         }
