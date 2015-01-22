@@ -232,9 +232,20 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
   {
     geometry_msgs::Vector3Stamped mag_msg;
     mag_msg.header = imu_msg.header;
-    mag_msg.vector.x = r.mag.get_scaled(1);
-    mag_msg.vector.y = r.mag.get_scaled(0);
-    mag_msg.vector.z = -r.mag.get_scaled(2);
+
+    if (tf_ned_to_enu)
+    {
+      mag_msg.vector.x = r.mag.get_scaled(1);
+      mag_msg.vector.y = r.mag.get_scaled(0);
+      mag_msg.vector.z = -r.mag.get_scaled(2);
+    }
+    else
+    {
+      mag_msg.vector.x = r.mag.get_scaled(0);
+      mag_msg.vector.y = r.mag.get_scaled(1);
+      mag_msg.vector.z = r.mag.get_scaled(2);
+    }
+
     mag_pub.publish(mag_msg);
   }
 
@@ -242,9 +253,20 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
   {
     geometry_msgs::Vector3Stamped rpy_msg;
     rpy_msg.header = imu_msg.header;
-    rpy_msg.vector.x = r.euler.get_scaled(1);
-    rpy_msg.vector.y = r.euler.get_scaled(0);
-    rpy_msg.vector.z = -r.euler.get_scaled(2);
+
+    if (tf_ned_to_enu)
+    {
+      rpy_msg.vector.x = r.euler.get_scaled(1);
+      rpy_msg.vector.y = r.euler.get_scaled(0);
+      rpy_msg.vector.z = -r.euler.get_scaled(2);
+    }
+    else
+    {
+      rpy_msg.vector.x = r.euler.get_scaled(0);
+      rpy_msg.vector.y = r.euler.get_scaled(1);
+      rpy_msg.vector.z = r.euler.get_scaled(2);
+    }
+
     rpy_pub.publish(rpy_msg);
   }
 
