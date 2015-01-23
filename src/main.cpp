@@ -309,6 +309,7 @@ int main(int argc, char **argv)
   double linear_acceleration_cov = linear_acceleration_stdev * linear_acceleration_stdev;
   double angular_velocity_cov = angular_velocity_stdev * angular_velocity_stdev;
 
+  // Enable converting from NED to ENU by default
   bool tf_ned_to_enu;
   private_nh.param<bool>("tf_ned_to_enu", tf_ned_to_enu, true);
 
