@@ -2,8 +2,8 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.1 (2015-01-23)
+------------------
 * Fixup parameter to enable conversion from ned to enu
 * Contributors: Paul Bovbel
 
