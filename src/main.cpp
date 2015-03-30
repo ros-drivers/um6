@@ -111,7 +111,7 @@ void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
   // set the broadcast rate of the device
   int rate;
   private_nh->param<int>("update_rate", rate, 20);
-  if (rate < 20 or rate > 300)
+  if (rate < 20 || rate > 300)
   {
     ROS_WARN("Potentially unsupported update rate of %d", rate);
   }
