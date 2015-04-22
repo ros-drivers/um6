@@ -2,8 +2,8 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.2 (2015-04-21)
+------------------
 * Add update_rate ROS parameter to set IMU frequency
 * Contributors: Jake Bruce, Mike Purvis
 
