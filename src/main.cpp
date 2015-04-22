@@ -108,6 +108,17 @@ void configureSensor(um6::Comms* sensor, ros::NodeHandle *private_nh)
                       UM6_GYROS_PROC_ENABLED | UM6_ACCELS_PROC_ENABLED | UM6_MAG_PROC_ENABLED |
                       UM6_QUAT_ENABLED | UM6_EULER_ENABLED | UM6_COV_ENABLED | UM6_TEMPERATURE_ENABLED |
                       UM6_BAUD_115200 << UM6_BAUD_START_BIT;
+  // set the broadcast rate of the device
+  int rate;
+  private_nh->param<int>("update_rate", rate, 20);
+  if (rate < 20 || rate > 300)
+  {
+    ROS_WARN("Potentially unsupported update rate of %d", rate);
+  }
+  // converting from desired rate to broadcast_rate as defined in UM6 datasheet
+  uint32_t rate_bits = (uint32_t) ((rate-20)*255.0/280.0);
+  ROS_INFO("Setting update rate to %uHz", rate);
+  comm_reg |= (rate_bits & UM6_SERIAL_RATE_MASK);
   r.communication.set(0, comm_reg);
   if (!sensor->sendWaitAck(r.communication))
   {
