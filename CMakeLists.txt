@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(um6)
 
-find_package(catkin REQUIRED COMPONENTS roscpp roslint serial sensor_msgs message_generation)
+find_package(catkin REQUIRED COMPONENTS roscpp serial sensor_msgs message_generation)
 
 add_service_files(
   FILES
@@ -41,16 +41,19 @@ install(TARGETS um6_driver
 #############
 ## Testing ##
 #############
+if(CATKIN_ENABLE_TESTING)
+  find_package(roslint REQUIRED)
 
-catkin_add_gtest(${PROJECT_NAME}_test_registers test/test_registers.cpp src/registers.cpp)
-catkin_add_gtest(${PROJECT_NAME}_test_comms test/test_comms.cpp src/comms.cpp src/registers.cpp)
-if(TARGET ${PROJECT_NAME}_test_comms)
-  target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
+  catkin_add_gtest(${PROJECT_NAME}_test_registers test/test_registers.cpp src/registers.cpp)
+  catkin_add_gtest(${PROJECT_NAME}_test_comms test/test_comms.cpp src/comms.cpp src/registers.cpp)
+  if(TARGET ${PROJECT_NAME}_test_comms)
+    target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
+  endif()
+
+  file(GLOB LINT_SRCS
+    src/*.cpp
+    include/um6/registers.h
+    include/um6/comms.h)
+  roslint_cpp(${LINT_SRCS})
+  roslint_add_test()
 endif()
-
-file(GLOB LINT_SRCS
-  src/*.cpp
-  include/um6/registers.h
-  include/um6/comms.h)
-roslint_cpp(${LINT_SRCS})
-roslint_add_test()
