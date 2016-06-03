@@ -46,9 +46,7 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(${PROJECT_NAME}_test_registers test/test_registers.cpp src/registers.cpp)
   catkin_add_gtest(${PROJECT_NAME}_test_comms test/test_comms.cpp src/comms.cpp src/registers.cpp)
-  if(TARGET ${PROJECT_NAME}_test_comms)
-    target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
-  endif()
+  target_link_libraries(${PROJECT_NAME}_test_comms util ${catkin_LIBRARIES})
 
   file(GLOB LINT_SRCS
     src/*.cpp
