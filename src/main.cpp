@@ -204,20 +204,24 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
     imu_msg.orientation_covariance[7] = r.covariance.get_scaled(14);
     imu_msg.orientation_covariance[8] = r.covariance.get_scaled(15);
 
-    // NED -> ENU conversion (x = y, y = x, z = -z)
+    // body-fixed frame NED to ENU: (x y z)->(x -y -z) or (w x y z)->(x -y -z w)
+    // world frame      NED to ENU: (x y z)->(y  x -z) or (w x y z)->(y  x -z w)
     if (tf_ned_to_enu)
     {
-      imu_msg.orientation.x = r.quat.get_scaled(2);
-      imu_msg.orientation.y = r.quat.get_scaled(1);
-      imu_msg.orientation.z = -r.quat.get_scaled(3);
-      imu_msg.orientation.w = r.quat.get_scaled(0);
+      // world frame
+      imu_msg.orientation.w =  r.quat.get_scaled(2);
+      imu_msg.orientation.x =  r.quat.get_scaled(1);
+      imu_msg.orientation.y = -r.quat.get_scaled(3);
+      imu_msg.orientation.z =  r.quat.get_scaled(0);
 
-      imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
-      imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
+      // body-fixed frame
+      imu_msg.angular_velocity.x =  r.gyro.get_scaled(0);
+      imu_msg.angular_velocity.y = -r.gyro.get_scaled(1);
       imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
 
-      imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
-      imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
+      // body-fixed frame
+      imu_msg.linear_acceleration.x =  r.accel.get_scaled(0);
+      imu_msg.linear_acceleration.y = -r.accel.get_scaled(1);
       imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
     }
     else
@@ -246,8 +250,9 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
     if (tf_ned_to_enu)
     {
-      mag_msg.vector.x = r.mag.get_scaled(1);
-      mag_msg.vector.y = r.mag.get_scaled(0);
+      // world frame
+      mag_msg.vector.x =  r.mag.get_scaled(1);
+      mag_msg.vector.y =  r.mag.get_scaled(0);
       mag_msg.vector.z = -r.mag.get_scaled(2);
     }
     else
@@ -267,8 +272,9 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
     if (tf_ned_to_enu)
     {
-      rpy_msg.vector.x = r.euler.get_scaled(1);
-      rpy_msg.vector.y = r.euler.get_scaled(0);
+      // world frame
+      rpy_msg.vector.x =  r.euler.get_scaled(1);
+      rpy_msg.vector.y =  r.euler.get_scaled(0);
       rpy_msg.vector.z = -r.euler.get_scaled(2);
     }
     else
@@ -324,6 +330,7 @@ int main(int argc, char **argv)
   bool tf_ned_to_enu;
   private_nh.param<bool>("tf_ned_to_enu", tf_ned_to_enu, true);
 
+  // These values do not need to be converted
   imu_msg.linear_acceleration_covariance[0] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[4] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[8] = linear_acceleration_cov;
