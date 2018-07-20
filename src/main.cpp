@@ -183,7 +183,8 @@ bool handleResetService(um6::Comms* sensor,
  * Uses the register accessors to grab data from the IMU, and populate
  * the ROS messages which are output.
  */
-void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg, bool tf_ned_to_enu)
+void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& imu_msg,
+                 bool tf_ned_to_enu, bool lt_model)
 {
   static ros::Publisher imu_pub = imu_nh->advertise<sensor_msgs::Imu>("data", 1, false);
   static ros::Publisher mag_pub = imu_nh->advertise<geometry_msgs::Vector3Stamped>("mag", 1, false);
@@ -214,11 +215,11 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
       imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
       imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
-      imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
+      imu_msg.angular_velocity.z = r.gyro.get_scaled(2);
 
       imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
       imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
-      imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
+      imu_msg.linear_acceleration.z = r.accel.get_scaled(2);
     }
     else
     {
@@ -255,6 +256,14 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
       mag_msg.vector.x = r.mag.get_scaled(0);
       mag_msg.vector.y = r.mag.get_scaled(1);
       mag_msg.vector.z = r.mag.get_scaled(2);
+    }
+
+    if (lt_model)
+    {
+      double temp = mag_msg.vector.x;
+      mag_msg.vector.x = mag_msg.vector.z;
+      mag_msg.vector.z = temp;
+      mag_msg.vector.y = -mag_msg.vector.y;
     }
 
     mag_pub.publish(mag_msg);
@@ -324,6 +333,11 @@ int main(int argc, char **argv)
   bool tf_ned_to_enu;
   private_nh.param<bool>("tf_ned_to_enu", tf_ned_to_enu, true);
 
+  // The magnetometer is different on the LT model
+  bool lt_model;
+  private_nh.param<bool>("lt_model", lt_model, false);
+
+  // These values do not need to be converted
   imu_msg.linear_acceleration_covariance[0] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[4] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[8] = linear_acceleration_cov;
@@ -361,7 +375,7 @@ int main(int argc, char **argv)
           {
             // Triggered by arrival of final message in group.
             imu_msg.header.stamp = ros::Time::now();
-            publishMsgs(registers, &imu_nh, imu_msg, tf_ned_to_enu);
+            publishMsgs(registers, &imu_nh, imu_msg, tf_ned_to_enu, lt_model);
             ros::spinOnce();
           }
         }
