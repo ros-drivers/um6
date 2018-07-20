@@ -215,11 +215,11 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
 
       imu_msg.angular_velocity.x = r.gyro.get_scaled(1);
       imu_msg.angular_velocity.y = r.gyro.get_scaled(0);
-      imu_msg.angular_velocity.z = -r.gyro.get_scaled(2);
+      imu_msg.angular_velocity.z = r.gyro.get_scaled(2);
 
       imu_msg.linear_acceleration.x = r.accel.get_scaled(1);
       imu_msg.linear_acceleration.y = r.accel.get_scaled(0);
-      imu_msg.linear_acceleration.z = -r.accel.get_scaled(2);
+      imu_msg.linear_acceleration.z = r.accel.get_scaled(2);
     }
     else
     {
@@ -263,6 +263,7 @@ void publishMsgs(um6::Registers& r, ros::NodeHandle* imu_nh, sensor_msgs::Imu& i
       double temp = mag_msg.vector.x;
       mag_msg.vector.x = mag_msg.vector.z;
       mag_msg.vector.z = temp;
+      mag_msg.vector.y = -mag_msg.vector.y;
     }
 
     mag_pub.publish(mag_msg);
