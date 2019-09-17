@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 
   // Use MagneticField message rather than Vector3Stamped.
   bool use_magnetic_field_msg;
-  private_nh.param<bool>("use_magnetic_field_msg", use_magnetic_field_msg, true);
+  private_nh.param<bool>("use_magnetic_field_msg", use_magnetic_field_msg, false);
 
   imu_msg.linear_acceleration_covariance[0] = linear_acceleration_cov;
   imu_msg.linear_acceleration_covariance[4] = linear_acceleration_cov;
