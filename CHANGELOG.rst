@@ -2,8 +2,8 @@
 Changelog for package um6
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.3 (2019-09-25)
+------------------
 * Disabled using MagneticField message by default.
 * Updated to be able to use MagneticField message.
 * Updated TravisCI to use Industrial CI for Kinetic and Melodic.
